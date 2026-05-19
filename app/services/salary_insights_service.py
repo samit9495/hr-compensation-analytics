@@ -35,3 +35,12 @@ class SalaryInsightsService:
         if row[0] is None:
             return (Decimal("0.00"), Decimal("0.00"))
         return (Decimal(row[0]).quantize(SALARY_SCALE), Decimal(row[1]).quantize(SALARY_SCALE))
+
+    def average_salary_by_country_and_title(self, country: str) -> dict[str, Decimal]:
+        rows = self.db.execute(
+            select(Employee.job_title, func.avg(Employee.salary))
+            .where(Employee.country == country)
+            .group_by(Employee.job_title)
+            .order_by(Employee.job_title)
+        ).all()
+        return {title: Decimal(avg).quantize(SALARY_SCALE) for title, avg in rows}
