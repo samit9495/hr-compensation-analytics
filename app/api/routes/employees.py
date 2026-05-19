@@ -17,11 +17,12 @@ MAX_PAGE_SIZE = 500
 @router.get("", response_model=list[EmployeeRead])
 def list_employees(
     country: Annotated[str | None, Query(min_length=2, max_length=2)] = None,
+    q: Annotated[str | None, Query(max_length=100)] = None,
     limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
     offset: Annotated[int, Query(ge=0)] = 0,
     db: Session = Depends(get_db),
 ) -> list[EmployeeRead]:
-    employees = EmployeeService(db).list(country=country, limit=limit, offset=offset)
+    employees = EmployeeService(db).list(country=country, q=q, limit=limit, offset=offset)
     return [EmployeeRead.model_validate(e) for e in employees]
 
 

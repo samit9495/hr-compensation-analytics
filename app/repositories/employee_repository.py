@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.employee import Employee
@@ -22,11 +22,18 @@ class EmployeeRepository:
         return self.db.get(Employee, employee_id)
 
     def list(
-        self, *, country: str | None, limit: int, offset: int
+        self,
+        *,
+        country: str | None,
+        q: str | None,
+        limit: int,
+        offset: int,
     ) -> list[Employee]:
         stmt = select(Employee).order_by(Employee.id).limit(limit).offset(offset)
         if country is not None:
             stmt = stmt.where(Employee.country == country)
+        if q:
+            stmt = stmt.where(func.lower(Employee.full_name).like(f"%{q.lower()}%"))
         return list(self.db.scalars(stmt))
 
     def delete(self, employee: Employee) -> None:
