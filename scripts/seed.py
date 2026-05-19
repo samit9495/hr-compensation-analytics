@@ -13,9 +13,9 @@ import argparse
 import logging
 import time
 
+from app.core.logging import configure_logging
 from app.db.seed import run as seed_run
 from app.db.session import SessionLocal, engine, init_db
-
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +32,30 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="delete all employees before inserting new rows",
     )
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        help="root log level for the seed run (default INFO)",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = _parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    configure_logging(args.log_level)
 
     init_db(engine)
+
+    logger.info(
+        "seed_start",
+        extra={
+            "event": "seed_start",
+            "count": args.count,
+            "rng_seed": args.seed,
+            "reset": args.reset,
+        },
+    )
+
     session = SessionLocal()
     try:
         started = time.perf_counter()
@@ -48,7 +64,14 @@ def main() -> int:
     finally:
         session.close()
 
-    logger.info("seed: inserted=%s elapsed_s=%.2f", inserted, elapsed)
+    logger.info(
+        "seed_finish",
+        extra={
+            "event": "seed_finish",
+            "inserted": inserted,
+            "elapsed_s": round(elapsed, 3),
+        },
+    )
     return 0
 
 
