@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -5,6 +7,8 @@ from app.core.exceptions import DuplicateEmployeeEmail, EmployeeNotFound
 from app.models.employee import Employee
 from app.repositories.employee_repository import EmployeeRepository
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate
+
+logger = logging.getLogger(__name__)
 
 
 class EmployeeService:
@@ -28,6 +32,14 @@ class EmployeeService:
                 raise DuplicateEmployeeEmail(payload.email) from exc
             raise
         self.db.refresh(employee)
+        logger.info(
+            "employee_created",
+            extra={
+                "event": "employee_created",
+                "employee_id": employee.id,
+                "country": employee.country,
+            },
+        )
         return employee
 
     def get(self, employee_id: int) -> Employee:
@@ -54,13 +66,29 @@ class EmployeeService:
 
     def update(self, employee_id: int, payload: EmployeeUpdate) -> Employee:
         employee = self.get(employee_id)
-        for field, value in payload.model_dump(exclude_unset=True).items():
+        changed = payload.model_dump(exclude_unset=True)
+        for field, value in changed.items():
             setattr(employee, field, value)
         self.db.commit()
         self.db.refresh(employee)
+        logger.info(
+            "employee_updated",
+            extra={
+                "event": "employee_updated",
+                "employee_id": employee.id,
+                "fields_changed": sorted(changed.keys()),
+            },
+        )
         return employee
 
     def delete(self, employee_id: int) -> None:
         employee = self.get(employee_id)
         self.repo.delete(employee)
         self.db.commit()
+        logger.info(
+            "employee_deleted",
+            extra={
+                "event": "employee_deleted",
+                "employee_id": employee_id,
+            },
+        )
