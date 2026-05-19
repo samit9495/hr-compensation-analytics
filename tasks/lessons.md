@@ -11,6 +11,32 @@ If a lesson recurs, promote it to a `.cursor/rules/` entry so the rules enforce 
 
 ## Lessons
 
+### 2026-05-20 — Python `lib/` gitignore rule silently shadowed `frontend/src/lib/`
+**Context**: Adding `frontend/src/lib/logger.ts` and `logger.test.ts` for
+the structured-logging task. `git add` failed with "ignored by one of
+your `.gitignore` files".
+**Issue**: `.gitignore` line 17 has `lib/` (the standard Python build /
+venv path). It also matches `frontend/src/lib/`, so `api.ts`,
+`queryClient.ts`, and `utils.ts` had been on disk but never committed —
+a fresh clone would have failed to build. The matching test files
+imported them, so locally everything looked fine.
+**Fix/Insight**: Add a re-include rule (`!frontend/src/lib/` and
+`!frontend/src/lib/**`) and check the orphaned files in. When porting a
+boilerplate Python `.gitignore` into a polyglot repo, scan for generic
+directory names (`lib/`, `bin/`, `build/`, `dist/`) that may be valid
+source paths in the JS half of the repo.
+
+### 2026-05-20 — `configure_logging` must not nuke pytest's caplog handler
+**Context**: Designing an idempotent root-logger setup for the FastAPI
+lifespan.
+**Issue**: A naive `for h in root.handlers: root.removeHandler(h)` makes
+re-runs idempotent but also removes pytest's `LogCaptureHandler`,
+which is what `caplog` relies on. Tests that use `caplog` after the
+lifespan ran would see zero records.
+**Fix/Insight**: Tag handlers we install with a marker
+(`handler._salary_management_handler = True`) and remove only those.
+Caplog and any other third-party handler stays.
+
 ### 2026-05-20 — pydantic-settings + list[str] env var: use NoDecode
 **Context**: Phase 12 — accepting `ALLOWED_ORIGINS=https://a.com,https://b.com`
 from the env so the production secret is human-readable.

@@ -12,6 +12,20 @@ _(seed with whatever the user hands you next; the implementation work is not sta
 
 ## Completed
 
+### 2026-05-20 — Structured JSON logging across backend and frontend
+- [x] `app/core/logging.py` — `JsonFormatter`, `request_id_var`, idempotent `configure_logging(level, sql_echo)`
+- [x] `Settings.log_level` / `Settings.log_sql` (env-driven) and lifespan wiring
+- [x] `RequestContextMiddleware` with `X-Request-ID` correlation and one structured access line per request
+- [x] Global `Exception` handler (ERROR + traceback) and WARN log on the existing `DomainError` handler
+- [x] `EmployeeService` create/update/delete INFO logs with safe identifiers; duplicate-email WARN with SHA-256 prefix
+- [x] `LOG_SQL=true` raises `sqlalchemy.engine` to DEBUG via the same formatter
+- [x] Seed CLI emits `seed_start` / `seed_finish` JSON events
+- [x] Frontend `src/lib/logger.ts` (info no-op in prod), `apiFetch` `api_error` log with request-id correlation, top-level `ErrorBoundary`
+- [x] `Dockerfile` and `fly.toml` expose `LOG_LEVEL` / `LOG_SQL`; uvicorn CMD switched to `--no-access-log`
+- [x] README "Logging" section documenting format, instrumented checkpoints, and env knobs
+- **Status**: done
+- **Summary**: 13 RED→GREEN pairs (plus one `chore:` to un-shadow `frontend/src/lib/` from `.gitignore`). Backend grew from 70 to 100 tests, frontend from 24 to 37; everything green.
+
 ### 2026-05-20 — Salary Management end-to-end build
 - [x] Phase 0  — environment bootstrap (Python 3.12 venv, backend + frontend stack verified)
 - [x] Phase 1  — backend foundation (FastAPI, Settings, DB session, domain exceptions, CORS, lifespan)

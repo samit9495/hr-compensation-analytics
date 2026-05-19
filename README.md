@@ -97,6 +97,50 @@ npm run test:coverage
 Errors share a uniform shape: `{"detail": "...", "code": "..."}` —
 `employee_not_found` (404), `duplicate_email` (409), Pydantic validation (422).
 
+## Logging
+
+The backend emits one structured JSON line per log record on stdout —
+no file rotation, no third-party SDK, just stdlib `logging` formatted
+through `app/core/logging.py:JsonFormatter`. Sample line:
+
+```json
+{"timestamp":"2026-05-20T03:44:11.482+00:00","level":"INFO","logger":"app.api.middleware.request_context","message":"http_request","request_id":"a3f1b9...","method":"GET","path":"/employees","status_code":200,"duration_ms":7.412}
+```
+
+What's instrumented:
+
+| Source                                     | Level   | Event                                                              |
+| ------------------------------------------ | ------- | ------------------------------------------------------------------ |
+| `RequestContextMiddleware`                 | INFO    | one `http_request` line per request (DEBUG for `GET /` health)     |
+| `EmployeeService.create/update/delete`     | INFO    | `employee_created` / `employee_updated` / `employee_deleted`       |
+| Duplicate email path                       | WARNING | `duplicate_email` with an 8-char SHA-256 prefix (no raw email)     |
+| `DomainError` exception handler            | WARNING | the failing `code`, status, request method/path                    |
+| Global `Exception` handler                 | ERROR   | `unhandled_exception` plus full traceback via `logger.exception()` |
+| `scripts/seed.py`                          | INFO    | `seed_start` and `seed_finish` (with `inserted` and `elapsed_s`)   |
+
+Every record carries the request-scoped `request_id` (UUID generated on
+the way in or echoed from an inbound `X-Request-ID` header). The same id
+is returned to the client in the `X-Request-ID` response header so a
+user-visible error can be grepped straight out of `fly logs`.
+
+The frontend has a small `src/lib/logger.ts` wrapper around `console`
+that drops `info` calls in production builds (`import.meta.env.PROD`)
+while always keeping `warn` and `error`. `apiFetch` logs an `api_error`
+for every non-OK response (`method`, `path`, `status`, `requestId`), and
+a top-level `ErrorBoundary` logs `react_error_boundary` and renders a
+fallback card so render-time failures don't blank the page.
+
+### Configuration
+
+| Variable    | Default | Effect                                                  |
+| ----------- | ------- | ------------------------------------------------------- |
+| `LOG_LEVEL` | `INFO`  | root logger level. `DEBUG` to see request-handler debug |
+| `LOG_SQL`   | `false` | when `true`, raises `sqlalchemy.engine` to DEBUG so emitted SQL flows through the JSON formatter |
+
+The Docker `CMD` passes `--no-access-log` to uvicorn so we don't
+double-log the request line; rely on the middleware's structured entry
+instead.
+
 ## How this was built
 
 This codebase was built test-first. Every behavior change has a
@@ -154,6 +198,8 @@ works on hard refresh.
 | ----------------- | ---------- | ------------------------------------------ |
 | `DATABASE_URL`    | Backend    | `sqlite:////data/app.db` (Fly volume)      |
 | `ALLOWED_ORIGINS` | Backend    | `https://salary-management.vercel.app` (CSV) |
+| `LOG_LEVEL`       | Backend    | `INFO` (default) / `DEBUG` for verbose runs |
+| `LOG_SQL`         | Backend    | `false` (default); `true` to echo SQL as DEBUG |
 | `VITE_API_URL`    | Frontend   | `https://salary-management.fly.dev`        |
 
 ## Manual smoke tests
