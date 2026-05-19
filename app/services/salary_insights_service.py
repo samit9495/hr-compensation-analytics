@@ -60,3 +60,35 @@ class SalaryInsightsService:
                 select(func.count(Employee.id)).where(Employee.country == country)
             ).scalar_one()
         )
+
+    def employee_count_by_country_all(self) -> dict[str, int]:
+        rows = self.db.execute(
+            select(Employee.country, func.count(Employee.id))
+            .group_by(Employee.country)
+            .order_by(Employee.country)
+        ).all()
+        return {country: int(count) for country, count in rows}
+
+    def recent_employees(self, *, limit: int) -> list[Employee]:
+        return list(
+            self.db.scalars(select(Employee).order_by(Employee.id.desc()).limit(limit))
+        )
+
+    def global_overview(self) -> dict[str, object]:
+        row = self.db.execute(
+            select(
+                func.count(Employee.id),
+                func.avg(Employee.salary),
+                func.count(func.distinct(Employee.country)),
+                func.count(func.distinct(Employee.job_title)),
+            )
+        ).one()
+        total, avg, country_n, title_n = row
+        return {
+            "total_employees": int(total or 0),
+            "average_salary": Decimal(avg).quantize(SALARY_SCALE)
+            if avg is not None
+            else Decimal("0.00"),
+            "active_countries": int(country_n or 0),
+            "active_titles": int(title_n or 0),
+        }
