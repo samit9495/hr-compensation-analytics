@@ -86,6 +86,14 @@ class TestListEmployeesAPI:
         page = client.get("/employees").json()
         assert len(page) == 50
 
+    def test_list_employees_exposes_x_total_count_header(self, client: TestClient) -> None:
+        for _ in range(3):
+            client.post("/employees", json=_valid_payload())
+
+        response = client.get("/employees", params={"limit": 2})
+        assert response.headers["x-total-count"] == "3"
+        assert len(response.json()) == 2
+
     def test_list_employees_filters_by_country(self, client: TestClient) -> None:
         client.post("/employees", json=_valid_payload(full_name="Indian", country="IN"))
         client.post("/employees", json=_valid_payload(full_name="American", country="US"))
