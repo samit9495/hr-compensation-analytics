@@ -71,3 +71,30 @@ class TestAverageSalaryByCountryAndTitle:
         result = SalaryInsightsService(db).average_salary_by_country_and_title("IN")
 
         assert result == {"Engineer": Decimal("150.00"), "Manager": Decimal("500.00")}
+
+
+class TestTopTitlesByEmployeeCount:
+    def test_returns_empty_list_when_no_employees(self, db: Session) -> None:
+        assert SalaryInsightsService(db).top_titles_by_count(limit=5) == []
+
+    def test_returns_titles_ordered_by_count_descending(self, db: Session) -> None:
+        rows = [
+            ("Engineer", 3),
+            ("Manager", 2),
+            ("Designer", 1),
+        ]
+        for title, count in rows:
+            for _ in range(count):
+                db.add(
+                    Employee(
+                        full_name="X",
+                        job_title=title,
+                        country="IN",
+                        salary=Decimal("100"),
+                    )
+                )
+        db.commit()
+
+        result = SalaryInsightsService(db).top_titles_by_count(limit=2)
+
+        assert result == [("Engineer", 3), ("Manager", 2)]
