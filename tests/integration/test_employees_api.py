@@ -44,3 +44,9 @@ class TestGetEmployeeAPI:
         response = client.get(f"/employees/{created['id']}")
         assert response.status_code == 200
         assert response.json()["id"] == created["id"]
+
+    def test_get_employee_returns_404_when_missing(self, client: TestClient) -> None:
+        response = client.get("/employees/9999")
+
+        assert response.status_code == 404
+        assert response.json()["code"] == "employee_not_found"
