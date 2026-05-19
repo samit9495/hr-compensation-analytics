@@ -125,3 +125,13 @@ class TestConfigureLogging:
             if getattr(h, "_salary_management_handler", False)
         )
         assert isinstance(marked.formatter, JsonFormatter)
+
+    def test_sql_echo_true_raises_engine_logger_to_debug(self) -> None:
+        configure_logging("INFO", sql_echo=True)
+
+        assert logging.getLogger("sqlalchemy.engine").level == logging.DEBUG
+
+    def test_sql_echo_false_keeps_engine_logger_quiet(self) -> None:
+        configure_logging("INFO", sql_echo=False)
+
+        assert logging.getLogger("sqlalchemy.engine").level >= logging.WARNING

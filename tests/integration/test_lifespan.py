@@ -57,3 +57,13 @@ def test_lifespan_sets_root_log_level_from_settings(
 
     with TestClient(app):
         assert logging.getLogger().level == logging.DEBUG
+
+
+def test_lifespan_passes_log_sql_setting_to_configure_logging(
+    monkeypatch: pytest.MonkeyPatch,
+    _reset_root_logger: None,
+) -> None:
+    monkeypatch.setenv("LOG_SQL", "true")
+
+    with TestClient(app):
+        assert logging.getLogger("sqlalchemy.engine").level == logging.DEBUG
