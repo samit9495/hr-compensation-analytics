@@ -28,3 +28,7 @@ class EmployeeRepository:
         if country is not None:
             stmt = stmt.where(Employee.country == country)
         return list(self.db.scalars(stmt))
+
+    def delete(self, employee: Employee) -> None:
+        self.db.delete(employee)
+        self.db.flush()

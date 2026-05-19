@@ -41,3 +41,8 @@ class EmployeeService:
         self.db.commit()
         self.db.refresh(employee)
         return employee
+
+    def delete(self, employee_id: int) -> None:
+        employee = self.get(employee_id)
+        self.repo.delete(employee)
+        self.db.commit()

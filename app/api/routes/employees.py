@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -51,3 +51,12 @@ def update_employee(
 ) -> EmployeeRead:
     employee = EmployeeService(db).update(employee_id, payload)
     return EmployeeRead.model_validate(employee)
+
+
+@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_employee(
+    employee_id: Annotated[int, Path(ge=1)],
+    db: Session = Depends(get_db),
+) -> Response:
+    EmployeeService(db).delete(employee_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
