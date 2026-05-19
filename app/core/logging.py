@@ -61,12 +61,16 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str, sort_keys=False)
 
 
-def configure_logging(level: str | int = "INFO") -> None:
+def configure_logging(level: str | int = "INFO", *, sql_echo: bool = False) -> None:
     """Configure the root logger to emit JSON to stdout.
 
     Idempotent: re-running replaces our handler (identified by the
     ``_salary_management_handler`` marker) without disturbing unrelated
     handlers such as pytest's ``caplog`` capture handler.
+
+    When ``sql_echo`` is true, the ``sqlalchemy.engine`` logger is raised
+    to DEBUG so emitted SQL flows through this same JSON formatter. The
+    default keeps it at WARNING so production logs stay readable.
     """
     root = logging.getLogger()
 
@@ -80,3 +84,6 @@ def configure_logging(level: str | int = "INFO") -> None:
     root.addHandler(handler)
 
     root.setLevel(level)
+    logging.getLogger("sqlalchemy.engine").setLevel(
+        logging.DEBUG if sql_echo else logging.WARNING
+    )
