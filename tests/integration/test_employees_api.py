@@ -94,6 +94,18 @@ class TestListEmployeesAPI:
 
         assert [row["full_name"] for row in rows] == ["Indian"]
 
+    def test_list_employees_filters_by_name_substring_case_insensitive(
+        self, client: TestClient
+    ) -> None:
+        client.post("/employees", json=_valid_payload(full_name="Jane Doe"))
+        client.post("/employees", json=_valid_payload(full_name="John Smith"))
+        client.post("/employees", json=_valid_payload(full_name="Jasmine Lee"))
+
+        rows = client.get("/employees", params={"q": "ja"}).json()
+
+        names = {row["full_name"] for row in rows}
+        assert names == {"Jane Doe", "Jasmine Lee"}
+
 
 class TestUpdateEmployeeAPI:
     def test_put_employee_updates_provided_fields(self, client: TestClient) -> None:
