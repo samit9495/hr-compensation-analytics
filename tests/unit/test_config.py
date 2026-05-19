@@ -22,3 +22,27 @@ def test_settings_parses_comma_separated_allowed_origins(monkeypatch) -> None:
         "https://a.example.com",
         "https://b.example.com",
     ]
+
+
+def test_settings_defaults_log_level_to_info(monkeypatch) -> None:
+    monkeypatch.delenv("LOG_LEVEL", raising=False)
+    settings = Settings()
+    assert settings.log_level == "INFO"
+
+
+def test_settings_reads_log_level_from_env(monkeypatch) -> None:
+    monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+    settings = Settings()
+    assert settings.log_level == "DEBUG"
+
+
+def test_settings_defaults_log_sql_to_false(monkeypatch) -> None:
+    monkeypatch.delenv("LOG_SQL", raising=False)
+    settings = Settings()
+    assert settings.log_sql is False
+
+
+def test_settings_reads_log_sql_from_env(monkeypatch) -> None:
+    monkeypatch.setenv("LOG_SQL", "true")
+    settings = Settings()
+    assert settings.log_sql is True
