@@ -12,3 +12,12 @@ class DomainError(Exception):
     def __init__(self, message: str = "") -> None:
         super().__init__(message)
         self.message = message or self.code
+
+
+class EmployeeNotFound(DomainError):
+    status_code = 404
+    code = "employee_not_found"
+
+    def __init__(self, employee_id: int) -> None:
+        super().__init__(f"Employee with id {employee_id} not found")
+        self.employee_id = employee_id

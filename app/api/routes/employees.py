@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -14,4 +16,13 @@ def create_employee(
     db: Session = Depends(get_db),
 ) -> EmployeeRead:
     employee = EmployeeService(db).create(payload)
+    return EmployeeRead.model_validate(employee)
+
+
+@router.get("/{employee_id}", response_model=EmployeeRead)
+def get_employee(
+    employee_id: Annotated[int, Path(ge=1)],
+    db: Session = Depends(get_db),
+) -> EmployeeRead:
+    employee = EmployeeService(db).get(employee_id)
     return EmployeeRead.model_validate(employee)
