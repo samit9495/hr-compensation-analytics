@@ -49,6 +49,9 @@ class EmployeeService:
             country=country, q=q, sort=sort, limit=limit, offset=offset
         )
 
+    def count(self, *, country: str | None = None, q: str | None = None) -> int:
+        return self.repo.count(country=country, q=q)
+
     def update(self, employee_id: int, payload: EmployeeUpdate) -> Employee:
         employee = self.get(employee_id)
         for field, value in payload.model_dump(exclude_unset=True).items():

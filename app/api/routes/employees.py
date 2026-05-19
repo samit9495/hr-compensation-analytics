@@ -22,6 +22,7 @@ MAX_PAGE_SIZE = 500
 
 @router.get("", response_model=list[EmployeeRead])
 def list_employees(
+    response: Response,
     country: Annotated[str | None, Query(min_length=2, max_length=2)] = None,
     q: Annotated[str | None, Query(max_length=100)] = None,
     sort: Annotated[str | None, Query(pattern=_SORT_PATTERN)] = None,
@@ -29,9 +30,9 @@ def list_employees(
     offset: Annotated[int, Query(ge=0)] = 0,
     db: Session = Depends(get_db),
 ) -> list[EmployeeRead]:
-    employees = EmployeeService(db).list(
-        country=country, q=q, sort=sort, limit=limit, offset=offset
-    )
+    service = EmployeeService(db)
+    employees = service.list(country=country, q=q, sort=sort, limit=limit, offset=offset)
+    response.headers["X-Total-Count"] = str(service.count(country=country, q=q))
     return [EmployeeRead.model_validate(e) for e in employees]
 
 

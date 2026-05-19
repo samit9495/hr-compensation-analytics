@@ -38,14 +38,22 @@ class EmployeeRepository:
         limit: int,
         offset: int,
     ) -> list[Employee]:
-        stmt = select(Employee)
+        stmt = self._filtered(select(Employee), country=country, q=q)
+        order_column = _resolve_sort(sort)
+        stmt = stmt.order_by(order_column).limit(limit).offset(offset)
+        return list(self.db.scalars(stmt))
+
+    def count(self, *, country: str | None, q: str | None) -> int:
+        stmt = self._filtered(select(func.count(Employee.id)), country=country, q=q)
+        return int(self.db.scalar(stmt) or 0)
+
+    @staticmethod
+    def _filtered(stmt, *, country: str | None, q: str | None):
         if country is not None:
             stmt = stmt.where(Employee.country == country)
         if q:
             stmt = stmt.where(func.lower(Employee.full_name).like(f"%{q.lower()}%"))
-        order_column = _resolve_sort(sort)
-        stmt = stmt.order_by(order_column).limit(limit).offset(offset)
-        return list(self.db.scalars(stmt))
+        return stmt
 
     def delete(self, employee: Employee) -> None:
         self.db.delete(employee)
