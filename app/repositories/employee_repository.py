@@ -21,6 +21,10 @@ class EmployeeRepository:
     def get(self, employee_id: int) -> Employee | None:
         return self.db.get(Employee, employee_id)
 
-    def list(self, *, limit: int, offset: int) -> list[Employee]:
+    def list(
+        self, *, country: str | None, limit: int, offset: int
+    ) -> list[Employee]:
         stmt = select(Employee).order_by(Employee.id).limit(limit).offset(offset)
+        if country is not None:
+            stmt = stmt.where(Employee.country == country)
         return list(self.db.scalars(stmt))

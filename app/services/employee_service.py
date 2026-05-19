@@ -29,5 +29,7 @@ class EmployeeService:
             raise EmployeeNotFound(employee_id)
         return employee
 
-    def list(self, *, limit: int = 50, offset: int = 0) -> list[Employee]:
-        return self.repo.list(limit=limit, offset=offset)
+    def list(
+        self, *, country: str | None = None, limit: int = 50, offset: int = 0
+    ) -> list[Employee]:
+        return self.repo.list(country=country, limit=limit, offset=offset)
