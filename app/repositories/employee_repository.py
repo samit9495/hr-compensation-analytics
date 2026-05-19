@@ -21,5 +21,6 @@ class EmployeeRepository:
     def get(self, employee_id: int) -> Employee | None:
         return self.db.get(Employee, employee_id)
 
-    def list(self) -> list[Employee]:
-        return list(self.db.scalars(select(Employee).order_by(Employee.id)))
+    def list(self, *, limit: int, offset: int) -> list[Employee]:
+        stmt = select(Employee).order_by(Employee.id).limit(limit).offset(offset)
+        return list(self.db.scalars(stmt))

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -10,11 +10,18 @@ from app.services.employee_service import EmployeeService
 router = APIRouter(prefix="/employees", tags=["employees"])
 
 
+DEFAULT_PAGE_SIZE = 50
+MAX_PAGE_SIZE = 500
+
+
 @router.get("", response_model=list[EmployeeRead])
 def list_employees(
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
     db: Session = Depends(get_db),
 ) -> list[EmployeeRead]:
-    return [EmployeeRead.model_validate(e) for e in EmployeeService(db).list()]
+    employees = EmployeeService(db).list(limit=limit, offset=offset)
+    return [EmployeeRead.model_validate(e) for e in employees]
 
 
 @router.post("", response_model=EmployeeRead, status_code=status.HTTP_201_CREATED)

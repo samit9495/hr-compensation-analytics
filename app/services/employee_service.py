@@ -29,5 +29,5 @@ class EmployeeService:
             raise EmployeeNotFound(employee_id)
         return employee
 
-    def list(self) -> list[Employee]:
-        return self.repo.list()
+    def list(self, *, limit: int = 50, offset: int = 0) -> list[Employee]:
+        return self.repo.list(limit=limit, offset=offset)
