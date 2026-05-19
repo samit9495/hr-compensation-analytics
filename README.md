@@ -118,6 +118,44 @@ Seeding 10,000 rows must complete in **under 5 seconds** on a typical
 dev laptop. Current measurement: **0.09 s** for 10k, **0.46 s** for 50k
 on Apple Silicon. See [`artifacts/performance.md`](./artifacts/performance.md).
 
+## Deployment
+
+### Backend — Fly.io
+
+```bash
+fly launch --copy-config --no-deploy           # uses fly.toml in the repo
+fly volumes create salary_data --size 1 --region bom
+fly secrets set ALLOWED_ORIGINS="https://<your-vercel-domain>"
+fly deploy
+
+# seed the production volume (one-shot, deterministic)
+fly ssh console -C "python -m scripts.seed --count 10000 --seed 42 --reset"
+```
+
+The `Dockerfile` is multi-arch-friendly and mounts the SQLite file on the
+`/data` volume, so the data survives machine restarts. Health check hits
+`/`.
+
+### Frontend — Vercel
+
+```bash
+cd frontend
+vercel link
+vercel env add VITE_API_URL  # https://<your-fly-app>.fly.dev
+vercel --prod
+```
+
+`vercel.json` rewrites all paths to `index.html` so client-side routing
+works on hard refresh.
+
+### Environment variables
+
+| Variable          | Where      | Example                                    |
+| ----------------- | ---------- | ------------------------------------------ |
+| `DATABASE_URL`    | Backend    | `sqlite:////data/app.db` (Fly volume)      |
+| `ALLOWED_ORIGINS` | Backend    | `https://salary-management.vercel.app` (CSV) |
+| `VITE_API_URL`    | Frontend   | `https://salary-management.fly.dev`        |
+
 ## Manual smoke tests
 
 See [`tasks/manual-test-scenarios.md`](./tasks/manual-test-scenarios.md)

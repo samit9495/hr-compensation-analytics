@@ -11,3 +11,14 @@ def test_settings_defaults_database_url_to_local_sqlite(monkeypatch) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     settings = Settings()
     assert settings.database_url == "sqlite:///./salary.db"
+
+
+def test_settings_parses_comma_separated_allowed_origins(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "ALLOWED_ORIGINS", "https://a.example.com, https://b.example.com"
+    )
+    settings = Settings()
+    assert settings.allowed_origins == [
+        "https://a.example.com",
+        "https://b.example.com",
+    ]

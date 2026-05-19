@@ -1,11 +1,25 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Annotated
+
+from pydantic import BeforeValidator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+def _parse_origins(value: object) -> object:
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.startswith("["):
+            return value
+        return [item.strip() for item in stripped.split(",") if item.strip()]
+    return value
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "sqlite:///./salary.db"
-    allowed_origins: list[str] = ["http://localhost:5173"]
+    allowed_origins: Annotated[list[str], NoDecode, BeforeValidator(_parse_origins)] = [
+        "http://localhost:5173"
+    ]
 
 
 def get_settings() -> Settings:
