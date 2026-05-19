@@ -76,6 +76,35 @@ class TestEmployeeServiceUpdate:
         assert sorted(record.fields_changed) == ["job_title", "salary"]
 
 
+class TestEmployeeServiceDuplicateEmail:
+    def test_duplicate_email_logs_warning_with_hash_not_raw_email(
+        self, db: Session, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        EmployeeService(db).create(_payload(email="jane@example.com"))
+        caplog.clear()
+        caplog.set_level(logging.WARNING, logger=SERVICE_LOGGER)
+
+        from app.core.exceptions import DuplicateEmployeeEmail
+
+        with pytest.raises(DuplicateEmployeeEmail):
+            EmployeeService(db).create(
+                _payload(full_name="Other", email="jane@example.com")
+            )
+
+        records = [
+            r
+            for r in caplog.records
+            if r.name == SERVICE_LOGGER and r.levelno == logging.WARNING
+        ]
+        assert len(records) == 1
+        record = records[0]
+        assert record.event == "duplicate_email"
+        assert "jane@example.com" not in record.getMessage()
+        assert "email" not in record.__dict__
+        assert isinstance(record.email_hash, str)
+        assert len(record.email_hash) == 8
+
+
 class TestEmployeeServiceDelete:
     def test_delete_logs_info_with_employee_id(
         self, db: Session, caplog: pytest.LogCaptureFixture
