@@ -129,3 +129,13 @@ class TestDeleteEmployeeAPI:
     def test_delete_missing_employee_returns_404(self, client: TestClient) -> None:
         response = client.delete("/employees/9999")
         assert response.status_code == 404
+
+
+class TestDuplicateEmail:
+    def test_post_with_duplicate_email_returns_409(self, client: TestClient) -> None:
+        client.post("/employees", json=_valid_payload(email="jane@example.com"))
+
+        response = client.post("/employees", json=_valid_payload(email="jane@example.com"))
+
+        assert response.status_code == 409
+        assert response.json()["code"] == "duplicate_email"
