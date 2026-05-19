@@ -1,7 +1,15 @@
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from app.models.employee import Employee
+
+SORTABLE_FIELDS: dict[str, InstrumentedAttribute] = {
+    "id": Employee.id,
+    "full_name": Employee.full_name,
+    "job_title": Employee.job_title,
+    "country": Employee.country,
+    "salary": Employee.salary,
+}
 
 
 class EmployeeRepository:
@@ -26,16 +34,28 @@ class EmployeeRepository:
         *,
         country: str | None,
         q: str | None,
+        sort: str | None,
         limit: int,
         offset: int,
     ) -> list[Employee]:
-        stmt = select(Employee).order_by(Employee.id).limit(limit).offset(offset)
+        stmt = select(Employee)
         if country is not None:
             stmt = stmt.where(Employee.country == country)
         if q:
             stmt = stmt.where(func.lower(Employee.full_name).like(f"%{q.lower()}%"))
+        order_column = _resolve_sort(sort)
+        stmt = stmt.order_by(order_column).limit(limit).offset(offset)
         return list(self.db.scalars(stmt))
 
     def delete(self, employee: Employee) -> None:
         self.db.delete(employee)
         self.db.flush()
+
+
+def _resolve_sort(sort: str | None):
+    if sort is None:
+        return Employee.id
+    direction_desc = sort.startswith("-")
+    key = sort[1:] if direction_desc else sort
+    column = SORTABLE_FIELDS[key]
+    return column.desc() if direction_desc else column.asc()

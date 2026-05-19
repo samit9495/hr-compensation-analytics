@@ -41,10 +41,13 @@ class EmployeeService:
         *,
         country: str | None = None,
         q: str | None = None,
+        sort: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[Employee]:
-        return self.repo.list(country=country, q=q, limit=limit, offset=offset)
+        return self.repo.list(
+            country=country, q=q, sort=sort, limit=limit, offset=offset
+        )
 
     def update(self, employee_id: int, payload: EmployeeUpdate) -> Employee:
         employee = self.get(employee_id)
