@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -11,6 +12,8 @@ from app.core.config import get_settings
 from app.core.exceptions import DomainError
 from app.core.logging import configure_logging
 from app.db.session import engine, init_db
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -27,6 +30,23 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.message, "code": exc.code},
+        )
+
+    @app.exception_handler(Exception)
+    async def _unhandled_exception_handler(
+        request: Request, exc: Exception
+    ) -> JSONResponse:
+        logger.exception(
+            "unhandled_exception",
+            extra={
+                "exception_type": type(exc).__name__,
+                "method": request.method,
+                "path": request.url.path,
+            },
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error", "code": "internal_error"},
         )
 
 
