@@ -11,5 +11,13 @@ def test_get_db_yields_session_and_closes() -> None:
     assert isinstance(session, Session)
     assert session.execute(text("SELECT 1")).scalar() == 1
 
+    closed = {"called": False}
+    original_close = session.close
+
+    def _spy() -> None:
+        closed["called"] = True
+        original_close()
+
+    session.close = _spy  # type: ignore[method-assign]
     next(gen, None)
-    assert not session.is_active
+    assert closed["called"] is True
