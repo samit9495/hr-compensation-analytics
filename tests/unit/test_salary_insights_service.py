@@ -73,6 +73,69 @@ class TestAverageSalaryByCountryAndTitle:
         assert result == {"Engineer": Decimal("150.00"), "Manager": Decimal("500.00")}
 
 
+class TestGlobalOverview:
+    def test_returns_zeros_when_no_employees(self, db: Session) -> None:
+        overview = SalaryInsightsService(db).global_overview()
+        assert overview == {
+            "total_employees": 0,
+            "average_salary": Decimal("0.00"),
+            "active_countries": 0,
+            "active_titles": 0,
+        }
+
+    def test_aggregates_across_countries(self, db: Session) -> None:
+        rows = [
+            ("IN", "Engineer", Decimal("100")),
+            ("IN", "Engineer", Decimal("200")),
+            ("US", "Manager", Decimal("600")),
+        ]
+        for country, title, salary in rows:
+            db.add(
+                Employee(
+                    full_name="X",
+                    job_title=title,
+                    country=country,
+                    salary=salary,
+                )
+            )
+        db.commit()
+
+        overview = SalaryInsightsService(db).global_overview()
+        assert overview == {
+            "total_employees": 3,
+            "average_salary": Decimal("300.00"),
+            "active_countries": 2,
+            "active_titles": 2,
+        }
+
+
+class TestCountryDistribution:
+    def test_returns_count_per_country(self, db: Session) -> None:
+        for country in ("IN", "IN", "US"):
+            db.add(
+                Employee(
+                    full_name="X",
+                    job_title="E",
+                    country=country,
+                    salary=Decimal("1"),
+                )
+            )
+        db.commit()
+
+        distribution = SalaryInsightsService(db).employee_count_by_country_all()
+        assert distribution == {"IN": 2, "US": 1}
+
+
+class TestRecentEmployees:
+    def test_returns_most_recent_by_id_descending(self, db: Session) -> None:
+        for name in ("A", "B", "C", "D"):
+            db.add(Employee(full_name=name, job_title="E", country="IN", salary=Decimal("1")))
+        db.commit()
+
+        recent = SalaryInsightsService(db).recent_employees(limit=2)
+        assert [e.full_name for e in recent] == ["D", "C"]
+
+
 class TestTopTitlesByEmployeeCount:
     def test_returns_empty_list_when_no_employees(self, db: Session) -> None:
         assert SalaryInsightsService(db).top_titles_by_count(limit=5) == []
