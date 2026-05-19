@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# post-commit — Artifact-audit reminder.
+#
+# Reads the most recent commit and prints a yellow nag to stderr when
+# the subject (or body) carries an assessor-visible signal that
+# probably warrants an entry under artifacts/. Never blocks, never
+# mutates files. Mirrors Step 9 of .cursor/skills/incubyte-tdd-loop/SKILL.md.
+#
+# Install once with:
+#   git config core.hooksPath scripts/git-hooks
+#   chmod +x scripts/git-hooks/*
+#
+# Uninstall with:
+#   git config --unset core.hooksPath
+
+set -eu
+
+subject=$(git log -1 --format='%s')
+body=$(git log -1 --format='%b')
+
+if [ -t 2 ]; then
+  yellow=$'\033[33m'
+  bold=$'\033[1m'
+  dim=$'\033[2m'
+  reset=$'\033[0m'
+else
+  yellow=""
+  bold=""
+  dim=""
+  reset=""
+fi
+
+found=0
+print_header() {
+  if [ "$found" -eq 0 ]; then
+    printf '%s%sartifact audit reminder%s\n' "$yellow" "$bold" "$reset" >&2
+    printf '%s  commit: %s%s\n' "$dim" "$subject" "$reset" >&2
+    found=1
+  fi
+}
+
+case "$subject" in
+  perf:*|perf\(*\):*|perf!:*|perf\(*\)!:*)
+    print_header
+    printf '  - perf change -> append a benchmark entry to artifacts/performance.md\n' >&2
+    ;;
+esac
+
+case "$subject" in
+  docs\(stitch\)*|feat\(stitch\)*|chore\(stitch\)*)
+    print_header
+    printf '  - Stitch MCP output -> log the prompt + outcome in artifacts/prompts/\n' >&2
+    ;;
+esac
+
+case "$subject" in
+  *!:\ *|*!:)
+    print_header
+    printf '  - breaking change -> record the trade-off in artifacts/tradeoffs.md\n' >&2
+    ;;
+esac
+
+if printf '%s' "$body" | grep -qiE '^(tradeoff|decision|considered):'; then
+  print_header
+  printf '  - design decision in commit body -> append to artifacts/tradeoffs.md\n' >&2
+fi
+
+if [ "$found" -eq 1 ]; then
+  printf '%s  next commit: docs(artifacts): <summary>%s\n' "$dim" "$reset" >&2
+fi
+
+exit 0
