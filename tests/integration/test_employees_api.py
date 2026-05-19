@@ -85,3 +85,11 @@ class TestListEmployeesAPI:
 
         page = client.get("/employees").json()
         assert len(page) == 50
+
+    def test_list_employees_filters_by_country(self, client: TestClient) -> None:
+        client.post("/employees", json=_valid_payload(full_name="Indian", country="IN"))
+        client.post("/employees", json=_valid_payload(full_name="American", country="US"))
+
+        rows = client.get("/employees", params={"country": "IN"}).json()
+
+        assert [row["full_name"] for row in rows] == ["Indian"]
