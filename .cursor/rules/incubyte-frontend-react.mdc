@@ -1,0 +1,126 @@
+---
+description: React + Vite + TypeScript conventions for the Salary Management UI, with the Google Stitch MCP as the primary UI generation workflow
+globs: frontend/**/*.{ts,tsx,js,jsx,css,html,json},frontend/**/*.test.{ts,tsx}
+alwaysApply: false
+---
+
+# Incubyte Frontend (React + Vite + TS)
+
+## Stack (finalized)
+
+- **React 18** with **TypeScript** (strict mode on).
+- **Vite** as the build tool.
+- **Tailwind CSS** for styling.
+- **shadcn/ui** as the component library (under `src/components/ui/`).
+- **React Router** for navigation.
+- **TanStack Query** (`@tanstack/react-query`) for server state. Do not roll your own loading/error state.
+- **TanStack Table** (`@tanstack/react-table`) for the employee list and any other tabular data.
+- **Recharts** for the analytics charts (insights by country, by job title, etc.).
+- **Testing**: Vitest + React Testing Library.
+- **Linting**: ESLint + Prettier, strict TS.
+
+## Recommended project structure
+
+```
+frontend/
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── tailwind.config.ts
+├── components.json          # shadcn/ui config
+├── src/
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── components/
+│   │   ├── ui/              # shadcn-generated primitives (Button, Card, Input, Dialog, ...)
+│   │   ├── employees/       # employee-domain components (EmployeeForm, EmployeeTable)
+│   │   ├── analytics/       # insights-domain components (charts, KPI cards)
+│   │   ├── dashboard/       # dashboard widgets and layout pieces
+│   │   └── layout/          # AppShell, Sidebar, TopBar
+│   ├── pages/               # route-level pages (EmployeesPage, InsightsPage, DashboardPage)
+│   ├── hooks/               # shared hooks (useDebounce, useEmployeesQuery, ...)
+│   ├── services/            # typed API fetchers, one file per resource (employees.ts, insights.ts)
+│   ├── lib/                 # pure helpers (formatters, validators)
+│   ├── types/               # shared TS types and API contracts
+│   └── test/                # Vitest setup, MSW handlers, shared test utilities
+└── tests/                   # optional cross-feature integration tests
+```
+
+Rules:
+
+- shadcn primitives live under `src/components/ui/` exactly where shadcn places them. Never edit them directly to add domain logic; wrap them in `src/components/<domain>/`.
+- Domain folders (`employees/`, `analytics/`, `dashboard/`) hold composed components. Page-level orchestration lives under `src/pages/`.
+- `src/services/` is the single boundary that talks to the backend. The rest of the app sees typed promises, not `fetch` calls.
+
+## Component rules
+
+- **One component per file**, named the same as the file.
+- **No default exports** for components — named exports only (easier to refactor).
+- **Props are explicit interfaces**, not inline types: `interface EmployeeFormProps { ... }`.
+- **No `any`**. Use `unknown` and narrow.
+- **No business logic in components**. Hooks for data, pure helpers for formatting.
+- Component must work without a network if its data is mocked — testability check.
+
+## State
+
+- **Server state**: TanStack Query. Cache key conventions: `["employees", filters]`, `["insights", "by-country", country]`.
+- **Local UI state**: `useState`, `useReducer`. No global state for this assessment.
+- **Forms**: `react-hook-form` + `zod` resolver, or plain controlled components if simple. Validation mirrors backend Pydantic constraints.
+
+## Money formatting
+
+- The backend returns Decimal as string. Format with `Intl.NumberFormat`:
+
+```ts
+const formatSalary = (value: string, currency = "USD") =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(Number(value));
+```
+
+- Never do salary arithmetic in JavaScript. The backend does the math; the frontend displays it.
+
+## UI generation: Stitch MCP directly
+
+Designs and initial React scaffolding come from the **Google Stitch MCP**, declared in `.cursor/mcp.json`. The pipeline is:
+
+1. Ask the Stitch MCP for the screen (dashboard layout, employee form, analytics page, responsive shell).
+2. Inspect the generated React. Treat it as a draft, never as a final commit.
+3. Refactor against the shadcn/ui primitives in `src/components/ui/` (do not reintroduce raw HTML or ad-hoc CSS).
+4. Use Tailwind tokens and the shadcn theme — no hex codes, no inline `style={{...}}` unless one-off.
+5. Write the component test first (RED), then keep the parts of the generated code that pass it (GREEN), then refactor.
+
+### Stitch MCP is for
+
+- Dashboard layouts
+- Forms (create/edit employee)
+- Analytics pages (Recharts wiring, TanStack Table headers)
+- Responsive scaffolding for the above
+
+### Stitch MCP is NOT for
+
+- Business logic. Hooks, services, validation rules are written by hand and TDD-driven.
+- Final accessibility passes. The developer owns keyboard nav, ARIA, color contrast.
+- API integration. The `services/` layer is the boundary; Stitch does not call your API.
+- State management. TanStack Query for server state, React state for UI state — no global stores generated by Stitch.
+
+See `.cursor/skills/incubyte-frontend-react/SKILL.md` for the step-by-step recipe.
+
+## Testing rules (mirrors `incubyte-testing.mdc`)
+
+- Test behavior, not implementation. No snapshot tests.
+- Use `screen.getByRole`, `getByLabelText` over `getByTestId`. Test ids are for the few cases where accessible queries are not enough.
+- Mock the API at the `src/services/` layer (or use `msw` if integration is needed). Do not mock `useQuery`.
+- A component test should not need to navigate the router unless the test is about the router.
+
+## Anti-patterns
+
+- Putting fetch logic in `useEffect`. Use TanStack Query.
+- Inline styles for anything but truly one-off rules. Use the design system.
+- A 500-line component. Split it.
+- `// eslint-disable-next-line` without a comment explaining why.
+
+## See also
+
+- `.cursor/skills/incubyte-frontend-react/SKILL.md` — scaffolding recipe.
+- `incubyte-testing.mdc` — frontend test conventions.
+- `incubyte-craftsmanship.mdc` — SOLID and clean code apply on the frontend too.

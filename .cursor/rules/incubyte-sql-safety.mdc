@@ -1,0 +1,83 @@
+---
+description: SQL safety — parameterized SQLAlchemy queries, no f-strings or .format() with user data, ORM by default
+globs: app/repositories/**/*.py,app/db/**/*.py,app/services/**/*.py,app/models/**/*.py
+alwaysApply: false
+---
+
+# Incubyte SQL Safety
+
+## ORM by default
+
+Use SQLAlchemy 2.x style (`select(...)`, `Session.execute()`, `Session.scalars()`) for all queries unless there is a measured reason to drop to raw SQL.
+
+```python
+stmt = select(Employee).where(Employee.country == country).limit(limit).offset(offset)
+employees = db.scalars(stmt).all()
+```
+
+## Parameterized values, always
+
+Never interpolate user-supplied data into a SQL string via f-strings, `%`, `+`, or `.format()`. SQLAlchemy bound parameters handle this automatically — the only way to get hurt is to bypass them.
+
+```python
+# BAD — SQL injection
+db.execute(text(f"SELECT * FROM employees WHERE country = '{country}'"))
+
+# BAD — same risk, different syntax
+db.execute(text("SELECT * FROM employees WHERE country = '{}'".format(country)))
+
+# GOOD — bound parameter
+db.execute(text("SELECT * FROM employees WHERE country = :country"), {"country": country})
+
+# BETTER — use the ORM
+db.scalars(select(Employee).where(Employee.country == country)).all()
+```
+
+## When raw SQL is justified
+
+Only when:
+
+- A pure SQL aggregate is meaningfully simpler than the ORM expression (e.g., a complex window function).
+- You have measured the ORM to be too slow on the actual data volume.
+
+Even then:
+
+- Use `text("... :param ...")` with a parameter dict.
+- Keep the query in `app/repositories/<aggregate>_repository.py`, not in the route or service.
+- Add a unit test that pins the SQL output for at least one input.
+
+## Bulk insert / seed
+
+The seed script writes 10,000 rows. Use `Session.execute(insert(Employee), [...])` or `bulk_insert_mappings` — both go through parameter binding. See `.cursor/skills/incubyte-seed-performance/SKILL.md`.
+
+## `IN (...)` clauses
+
+The ORM does this safely:
+
+```python
+db.scalars(select(Employee).where(Employee.id.in_(ids))).all()
+```
+
+If you must write it as raw text, use SQLAlchemy's `expanding=True`:
+
+```python
+stmt = text("SELECT * FROM employees WHERE id IN :ids").bindparams(
+    bindparam("ids", expanding=True)
+)
+db.execute(stmt, {"ids": ids})
+```
+
+## Identifiers (table/column names)
+
+These cannot be bound parameters. If you need a dynamic identifier (rare for this project), validate it against an allow-list of known names before substituting. The Salary Management assessment should not need this.
+
+## Secret-free
+
+- Never hardcode database URLs, passwords, or API keys in source.
+- `app/core/config.py` reads from environment via `pydantic-settings` with sensible defaults for SQLite local dev (`sqlite:///./salary.db`).
+
+## See also
+
+- `incubyte-fastapi-core.mdc` — overall layering.
+- `.cursor/skills/sql-query-audit/SKILL.md` — how to audit existing queries.
+- `incubyte-error-handling.mdc` — surfacing DB errors as proper HTTP responses.

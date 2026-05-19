@@ -1,0 +1,73 @@
+---
+description: Code smell catalog, edge-case guards, structural rules — concrete companion to incubyte-craftsmanship
+alwaysApply: true
+---
+
+# Incubyte Code Quality
+
+The companion to `incubyte-craftsmanship.mdc` — concrete smells, edge cases, and structural rules. For values and principles, read `incubyte-craftsmanship.mdc` first.
+
+## Smells to fix
+
+| Smell | Fix |
+|-------|-----|
+| Magic numbers (`if salary > 10000`) | Named constants or settings (`MINIMUM_SALARY = Decimal("10000.00")`). |
+| Magic strings (`status == "active"`) | `Enum` or module-level constant. |
+| Wide `try / except Exception` | Catch specific exceptions; let unexpected ones bubble to the global handler. |
+| `.get(id=x)` without a None check | `repository.get_or_404(id)` or explicit `if not employee: raise NotFound`. |
+| Returning `None` to signal "not found" mixed with returning models | Use a custom exception or `Result`-style return — be consistent. |
+| Function > 20 lines, file > 300 lines | Split. Extract helpers named after what they compute. |
+| `if` chain on a field that should be polymorphic | Strategy map or `match`/`case` for clarity. |
+| Boolean trap (`process(employee, dry_run=True)`) | Two functions: `process(employee)`, `simulate_process(employee)`. |
+| `print()` for diagnostics | `logger.info(...)` / `logger.debug(...)`. |
+| Commented-out code | Delete it. Git remembers. |
+
+## Edge cases (every change must consider)
+
+- **Empty inputs**: empty list, empty string, `None`, `0`. What does the function return?
+- **One-element inputs**: aggregations of single-element sets must not divide by zero.
+- **Zero matches**: querying a country with no employees should not 500. Return `Decimal("0")` or `null` per the API contract — and **test it**.
+- **Decimal precision**: never use `float` for salary arithmetic. Use `Decimal` and `quantize(Decimal("0.01"))` for display.
+- **Division by zero**: guard `if count == 0: return Decimal("0")` before computing averages.
+- **Off-by-one**: `range(n)` produces `n` items. Pagination `offset + limit` may overshoot total.
+- **Long strings**: `Field(max_length=100)` on every text input. SQLite does not enforce VARCHAR length by default — Pydantic must.
+- **Unicode names**: full names contain non-ASCII. The seed inputs and tests should include at least one non-ASCII case.
+- **Concurrency**: not in scope for this assessment, but do not assume "the only writer". A second `POST` to the same email may arrive.
+
+## Money handling
+
+```python
+from decimal import Decimal
+
+SALARY_SCALE = Decimal("0.01")
+
+def display(value: Decimal) -> Decimal:
+    return value.quantize(SALARY_SCALE)
+```
+
+- Never compare `Decimal` to `float`.
+- Always specify the column as `Numeric(12, 2)` (precision, scale) — adjust if business demands higher precision.
+
+## Logging context
+
+Every error log includes the identifiers needed to reproduce:
+
+```python
+logger.exception(
+    "Failed to compute insights for country=%s metric=%s",
+    country, metric,
+)
+```
+
+- Do not log full payloads (PII risk).
+- Do not log secrets.
+
+## Structure rules
+
+- One responsibility per file. `employees.py` (route) does not import from `insights.py` (route).
+- `__init__.py` is for re-exports, not behavior.
+- A circular import is a design smell — split the offending module.
+
+## Authority
+
+This rule is concrete; for the values that produced it, read `incubyte-craftsmanship.mdc`. The code reviewer at `.cursor/agents/incubyte-code-reviewer.md` checks against both.

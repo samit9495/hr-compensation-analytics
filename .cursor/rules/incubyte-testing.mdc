@@ -1,0 +1,183 @@
+---
+description: Testing — pytest for backend, Vitest + RTL for frontend, TDD-first, 90% coverage on changed modules, characterization tests before legacy refactor
+alwaysApply: true
+---
+
+# Incubyte Testing
+
+The authoritative TDD process lives in `incubyte-tdd-discipline.mdc`. This rule covers **how** tests are written, organized, and executed.
+
+## Backend: pytest + httpx TestClient
+
+### Stack
+
+- `pytest`, `pytest-cov` (coverage), `httpx` (FastAPI client), `pytest-asyncio` only if async tests are needed.
+- Database under test: **in-memory SQLite** via a session fixture so every test starts clean.
+
+### Layout
+
+```
+app/
+  ...
+tests/
+├── conftest.py             # shared fixtures: engine, session, client
+├── unit/
+│   ├── test_employee_service.py
+│   ├── test_salary_insights_service.py
+│   └── test_employee_repository.py
+├── integration/
+│   ├── test_employees_api.py
+│   └── test_insights_api.py
+└── seed/
+    └── test_seed_script.py
+```
+
+### Naming
+
+- Files: `test_<module_under_test>.py`.
+- Classes: `class TestSalaryInsightsService:`.
+- Methods: `test_<action>_<condition>_<expected>` — e.g. `test_average_salary_by_country_returns_zero_when_no_employees`.
+
+### Shared fixtures (`tests/conftest.py`)
+
+```python
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.db.base import Base
+from app.db.session import get_db
+from app.main import app
+
+
+@pytest.fixture
+def engine():
+    eng = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    Base.metadata.create_all(eng)
+    yield eng
+    Base.metadata.drop_all(eng)
+
+
+@pytest.fixture
+def db(engine) -> Session:
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@pytest.fixture
+def client(db) -> TestClient:
+    app.dependency_overrides[get_db] = lambda: db
+    with TestClient(app) as c:
+        yield c
+    app.dependency_overrides.clear()
+```
+
+### The default test
+
+```python
+class TestSalaryInsightsService:
+    def test_average_salary_by_country_returns_zero_when_no_employees(self, db):
+        service = SalaryInsightsService(db)
+        assert service.average_salary_by_country("IN") == Decimal("0.00")
+```
+
+One assertion per test where practical. A test should fit on a screen.
+
+### Mock at the boundary, not your own code
+
+- Mock `time.time()`, `uuid.uuid4()`, the filesystem, the network.
+- Do NOT mock `EmployeeRepository` when testing `EmployeeService` — use a real in-memory DB. The integration is the interesting part.
+- Mock the database only if (rare) the test is about a pathological DB failure mode.
+
+### Coverage
+
+- Target: **≥ 90%** line coverage on every module touched by the change.
+- Command: `pytest --cov=app --cov-report=term-missing`.
+- The coverage report is part of the deliverable; check it in to `artifacts/performance.md` or the README if asked.
+
+## Frontend: Vitest + React Testing Library
+
+### Stack
+
+- `vitest`, `@testing-library/react`, `@testing-library/user-event`, `jsdom`.
+
+### Layout
+
+```
+src/
+├── components/
+│   ├── EmployeeForm.tsx
+│   ├── EmployeeForm.test.tsx       # co-located
+│   ├── InsightsPanel.tsx
+│   └── InsightsPanel.test.tsx
+└── api/
+    ├── employees.ts
+    └── employees.test.ts
+```
+
+Co-locate tests with the components they test. Easier to find, easier to delete.
+
+### Behavioral, not snapshot
+
+Tests describe what the user can do:
+
+```tsx
+test("submitting the form posts an employee and shows the confirmation", async () => {
+  render(<EmployeeForm onSubmit={mockSubmit} />)
+  await userEvent.type(screen.getByLabelText(/full name/i), "Jane Doe")
+  await userEvent.type(screen.getByLabelText(/salary/i), "50000")
+  await userEvent.click(screen.getByRole("button", { name: /save/i }))
+  expect(mockSubmit).toHaveBeenCalledWith(expect.objectContaining({ fullName: "Jane Doe" }))
+})
+```
+
+Snapshot tests are forbidden — they pin layout, not behavior.
+
+## Characterization tests (refactoring legacy)
+
+If you need to refactor code that has no tests:
+
+1. Write a test that captures the **current** observable behavior (output for representative inputs), even if it looks wrong.
+2. Commit `test: characterize <function>` so the safety net is visible.
+3. Refactor with that test as the guardrail.
+4. After the refactor, fix any wrong behavior with separate RED → GREEN cycles.
+
+Source: Sandro Mancuso — *Testing and Refactoring Legacy Code* (`incubyte.co/inspiration`).
+
+## Determinism
+
+- No `datetime.now()` in tests — inject a clock.
+- No `random` without `random.seed(...)`.
+- No reliance on test execution order (`pytest-randomly` is recommended).
+- No reliance on dict insertion order across tests.
+
+## Speed targets
+
+- Full backend suite: < 5s after the first run.
+- Single test: < 100ms unless it integrates the FastAPI client (then < 500ms).
+- If a test takes longer, mock the slow boundary or move it to a `slow` mark.
+
+## Running
+
+```bash
+# Backend
+pytest -v
+pytest --cov=app --cov-report=term-missing
+pytest tests/unit/test_salary_insights_service.py::TestSalaryInsightsService::test_average -v
+
+# Frontend
+npm run test
+npm run test -- --coverage
+```
+
+## See also
+
+- `incubyte-tdd-discipline.mdc` — the loop and laws.
+- `incubyte-commit-hygiene.mdc` — how each test becomes a commit.
+- `.cursor/skills/incubyte-tdd-loop/SKILL.md` — the one-screen recipe.
+- `.cursor/skills/incubyte-testing/SKILL.md` — short companion.

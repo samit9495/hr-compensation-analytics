@@ -1,0 +1,79 @@
+---
+description: "Keyword shortcuts that change AI behavior. Triggers: TDD, RED, GREEN, REFACTOR, AUDIT, REFACTOR, TESTS, BUG, SEC, ULTRA, STEP, WHY5, FIRST, PRE, POST, INVERT, TLDR, ELI5, BLUF, SHORT, TABLE, DENSE, DELPHI, V2, ALT3, SCOPE, COUNCIL, DEBATE"
+alwaysApply: true
+---
+
+# AI Shortcuts
+
+Keyword triggers that modify behavior when they appear at the start of a prompt. Shortcuts stack: `ULTRA AUDIT: app/services/employee.py` = deep reasoning + full code review.
+
+## TDD Loop (Incubyte core discipline)
+
+| Shortcut | Behavior |
+|----------|----------|
+| `TDD: <behavior>` | Enter the full Red-Green-Refactor loop via `.cursor/skills/incubyte-tdd-loop/SKILL.md`. Write the smallest failing test first, commit with `test:`, then minimum impl, commit with `feat:`, then refactor. |
+| `RED: <behavior>` | Write only the next failing test. Run it. Paste the failure. Commit with `test: ...`. Do NOT write production code. |
+| `GREEN: <test>` | Given a failing test, write the minimum production code to pass it. Run all tests. Commit with `feat: ...`. |
+| `REFACTOR: <target>` | Tests must already be green. Improve structure without changing behavior. Re-run all tests after every micro-step. Commit with `refactor: ...`. |
+
+## Code Intelligence
+
+| Shortcut | Behavior |
+|----------|----------|
+| `AUDIT: <target>` | Full code review using `.cursor/agents/incubyte-code-reviewer.md` checklist. Read all modified/target files, run every checklist section (including TDD-discipline and craftsmanship), report issues by severity. |
+| `TESTS: <target>` | Write tests following `incubyte-testing.mdc` TDD flow. Red-green-refactor. |
+| `BUG: <description>` | Investigate root cause. Write a failing regression test first (RED), confirm it fails, then fix (GREEN). Update `tasks/lessons.md` if the bug reveals a non-obvious pattern. |
+| `SEC: <target>` | Security audit per `incubyte-sql-safety.mdc`: scan for f-strings/`.format()` in SQL, missing input validation, secrets in code, broken auth. Report findings with severity. |
+
+## Thinking Frameworks
+
+| Shortcut | Behavior |
+|----------|----------|
+| `ULTRA` | Maximum depth reasoning. Enumerate tradeoffs, edge cases, failure modes, and second-order effects before answering. Do not rush to a solution. |
+| `STEP` | Step-by-step logical breakdown. Number every step. Show reasoning chain explicitly. |
+| `WHY5` | Five Whys root cause analysis. Start from the symptom, ask "why?" five times, arrive at the root cause before proposing a fix. |
+| `FIRST` | First principles reasoning. Strip all assumptions, identify the fundamental constraints, rebuild the solution from scratch. |
+| `PRE` | Pre-mortem. Assume the proposed change fails in production. List the 5 most likely failure modes and how to prevent each. |
+| `POST` | Post-mortem. Analyze what went wrong. Extract lessons and append to `tasks/lessons.md` using the standard format. |
+| `INVERT` | Inversion. Define what failure looks like first, then derive the solution that avoids every failure path. |
+
+## Output Formatting
+
+| Shortcut | Behavior |
+|----------|----------|
+| `TLDR` | 2-3 sentence summary only. No code, no detail. |
+| `ELI5` | Explain using a simple analogy. No jargon, no technical terms. |
+| `BLUF` | Bottom Line Up Front. State the conclusion/recommendation first, then provide supporting detail. |
+| `SHORT` | Maximum 3 sentences. |
+| `TABLE` | Present the answer as a comparison table with clear columns. |
+| `DENSE` | Information-dense. No filler, no repetition. Assume expert audience. |
+
+## Meta Control
+
+| Shortcut | Behavior |
+|----------|----------|
+| `DELPHI` | Three-pass loop: (1) generate a solution, (2) critique it — find weaknesses, edge cases, missed requirements, (3) produce an improved final version incorporating the critique. |
+| `V2` | Take the previous output and produce an improved version. State what changed and why. |
+| `ALT3` | Generate 3 distinct alternative approaches. For each: one-line summary, key tradeoff, and when to prefer it. |
+| `SCOPE` | Before solving, define the problem boundary: what is in scope, what is out, what assumptions are being made, what unknowns remain. |
+
+## Cross-References (do not duplicate)
+
+- `COUNCIL` / `DEBATE` / `WAR ROOM` → handled by the `llm-council` skill. See `.cursor/skills/llm-council/SKILL.md`.
+- `PLAN` → use Cursor's native plan mode.
+
+## Usage Examples
+
+```
+TDD: employee creation endpoint returns 201 with the created employee
+RED: average salary by country includes only active employees
+GREEN: AverageSalaryService.by_country returns Decimal aggregated mean
+REFACTOR: extract EmployeeRepository from EmployeeService
+AUDIT: app/services/insights.py
+TESTS: app/api/routes/employees.py
+SEC: app/db/queries.py
+BUG: insights endpoint returns 500 when country has no employees
+ULTRA ALT3: seeding strategy for 10k employees on SQLite
+PRE: shipping the salary insights API without pagination
+DELPHI: best approach for deterministic seed data
+```

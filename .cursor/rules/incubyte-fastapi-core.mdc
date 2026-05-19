@@ -1,0 +1,93 @@
+---
+description: Core FastAPI + SQLAlchemy + Pydantic conventions for the Incubyte Salary Management project
+alwaysApply: true
+---
+
+# Incubyte FastAPI Core
+
+## Project Stack
+- **Python 3.11+**, **FastAPI**, **SQLAlchemy 2.x** (typed), **Pydantic v2**
+- **SQLite** as the relational database (single file at the project root or in `var/`)
+- **Uvicorn** for the ASGI server
+- **pytest** for backend tests
+- Single-tenant. No schemas, no multi-tenancy, no migrations system unless explicitly requested (use `Base.metadata.create_all` on startup, or `alembic` if the user asks).
+
+## Architecture: Thin routes → Services → Repositories/Models
+
+```
+app/
+├── main.py                  # FastAPI() app factory, router includes, lifespan hooks
+├── core/
+│   ├── config.py            # pydantic-settings; reads from env / defaults
+│   └── exceptions.py        # domain exceptions + handlers
+├── db/
+│   ├── base.py              # DeclarativeBase
+│   ├── session.py           # engine, SessionLocal, get_db dependency
+│   └── seed.py              # seed entry-point (see incubyte-seed-performance skill)
+├── models/                  # SQLAlchemy ORM models
+│   └── employee.py
+├── schemas/                 # Pydantic v2 request/response models
+│   └── employee.py
+├── repositories/            # data access (one file per aggregate)
+│   └── employee_repository.py
+├── services/                # business logic (one file per use case / aggregate)
+│   ├── employee_service.py
+│   └── salary_insights_service.py
+└── api/
+    └── routes/
+        ├── employees.py
+        └── insights.py
+```
+
+Rules for each layer:
+
+- **Routes** are thin: parse request, call service, return Pydantic response. No business logic, no SQL.
+- **Services** contain the use cases. They depend on repositories and pure helpers. No FastAPI imports.
+- **Repositories** wrap SQLAlchemy queries. Return models or plain values, never `Response` objects.
+- **Models** describe the schema. No business methods that require external services.
+- **Schemas** validate and shape I/O. Never reuse a model directly as a response type.
+
+## Dependency injection
+
+- The database session is injected via `Depends(get_db)`. Routes never import `SessionLocal` directly.
+- Services accept `Session` (or a repository) via their constructor, never via globals or module-level state. This is what makes them unit-testable.
+
+```python
+def get_employee_service(db: Session = Depends(get_db)) -> EmployeeService:
+    return EmployeeService(EmployeeRepository(db))
+```
+
+## Transactions
+
+- For any multi-statement write, wrap it in `with db.begin():` or use `Session.commit()` at the **service boundary**, not inside repositories.
+- Reads do not need explicit transactions.
+- One service call = one logical transaction.
+
+## Decimal for money
+
+- Salaries are `Decimal`, not `float`. The column is `Numeric(12, 2)` (adjust scale if requirements change).
+- All arithmetic uses `Decimal`. Convert to `float` only at the API boundary if the consumer demands it (prefer string-serialized Decimal).
+
+## Logging
+
+- `logger = logging.getLogger(__name__)` at the top of every module that needs to log.
+- `logger.exception(...)` inside `except` blocks. Never `print` for error reporting.
+
+## Imports (canonical)
+
+```python
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy import select, func
+from pydantic import BaseModel, Field
+
+from app.db.session import get_db
+from app.models.employee import Employee
+from app.schemas.employee import EmployeeCreate, EmployeeRead
+from app.services.employee_service import EmployeeService
+```
+
+## What this rule does NOT cover
+
+- DRF, Django views, multi-tenancy, schema switching, AWS Lambdas, EDI — none of those apply here.
+- See `incubyte-api-routes.mdc` for the route-level patterns, `incubyte-sql-safety.mdc` for query safety, `incubyte-testing.mdc` for the test stack.

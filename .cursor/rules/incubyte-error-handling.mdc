@@ -1,0 +1,106 @@
+---
+description: Domain exceptions, FastAPI exception handlers, structured error payloads, no silent failures
+alwaysApply: true
+---
+
+# Incubyte Error Handling
+
+## Layered exceptions
+
+| Layer | Raises | Catches |
+|-------|--------|---------|
+| Repository | `sqlalchemy.exc.*`, `NoResultFound` | Should NOT swallow — let it bubble. |
+| Service | Domain exceptions (`EmployeeNotFound`, `DuplicateEmail`) | Catches DB exceptions only when there is a domain meaning to assign. |
+| Route | Nothing local | Catches nothing; the exception handler maps domain exceptions to HTTP. |
+| `main.py` | Global `app.exception_handler(DomainError)` | Maps everything to `JSONResponse`. |
+
+## Define domain exceptions in one place
+
+```python
+# app/core/exceptions.py
+class DomainError(Exception):
+    """Base for domain-level errors mapped to HTTP responses."""
+
+class EmployeeNotFound(DomainError):
+    pass
+
+class DuplicateEmployeeEmail(DomainError):
+    pass
+```
+
+## Register exception handlers
+
+```python
+# app/main.py
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from app.core.exceptions import EmployeeNotFound, DuplicateEmployeeEmail
+
+app = FastAPI()
+
+@app.exception_handler(EmployeeNotFound)
+async def handle_employee_not_found(request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc) or "Employee not found", "code": "employee_not_found"},
+    )
+
+@app.exception_handler(DuplicateEmployeeEmail)
+async def handle_duplicate_email(request, exc):
+    return JSONResponse(
+        status_code=409,
+        content={"detail": str(exc), "code": "duplicate_email"},
+    )
+```
+
+## Error response shape
+
+Every error response has this shape:
+
+```json
+{ "detail": "Human-readable message", "code": "machine_readable_code" }
+```
+
+This matches what FastAPI returns for `HTTPException` (`detail` field) so frontend can parse uniformly. Add `code` for machine handling.
+
+## Never silent
+
+- No `except: pass`.
+- No `except Exception as e: print(e)`.
+- Every caught exception is either:
+  - **Re-raised** (after logging context), or
+  - **Translated** to a domain exception, or
+  - **Handled** with a documented recovery path.
+
+## Logging in exception handlers
+
+```python
+import logging
+logger = logging.getLogger(__name__)
+
+@app.exception_handler(Exception)
+async def handle_unexpected(request, exc):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "code": "internal_error"},
+    )
+```
+
+The global `Exception` handler is a safety net. If a request hits it, something needs a new test.
+
+## HTTPException usage
+
+For ad-hoc 4xx responses inside a route (e.g. malformed query that escaped Pydantic):
+
+```python
+raise HTTPException(status_code=400, detail="country must be a 2-letter ISO code")
+```
+
+Prefer Pydantic validation (`Field`, validators) — it returns a consistent 422 with the field that failed.
+
+## See also
+
+- `incubyte-fastapi-core.mdc` — layering and where exceptions are raised vs caught.
+- `incubyte-api-routes.mdc` — HTTP status code semantics.
+- `incubyte-code-quality.mdc` — anti-patterns in error handling.

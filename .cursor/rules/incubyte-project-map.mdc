@@ -1,0 +1,93 @@
+---
+description: Project anatomy — where things live in the Salary Management codebase. Skeleton; update as the build progresses.
+globs: app/**/*.py,frontend/**/*.{ts,tsx},tests/**/*.py,scripts/**/*.py
+alwaysApply: false
+---
+
+# Incubyte Salary-Management Project Map
+
+> **Note**: This map is a skeleton. As soon as the first feature lands, update each section with the actual file paths and 1-line responsibilities. Treat unfilled entries as TODOs to be replaced — not aspirational architecture.
+
+## Top-level
+
+```
+Salary-Management-Assessment/
+├── .cursor/                  # Cursor rules, skills, agents
+├── AGENTS.md                 # short project overview for human + agent readers
+├── README.md                 # public-facing setup, run, test instructions
+├── tasks/                    # todo, lessons, manual test scenarios
+├── artifacts/                # planning, architecture, prompts, trade-offs, perf
+├── app/                      # FastAPI backend (Python)
+├── tests/                    # backend tests (mirrors app/ layout)
+├── frontend/                 # React + Vite UI (Node.js)
+├── scripts/                  # seed and dev helpers
+├── pyproject.toml            # Python project metadata + deps
+├── salary.db                 # SQLite DB file (gitignored; created on first run)
+└── .gitignore
+```
+
+## Backend (`app/`)
+
+| Path | Responsibility |
+|------|----------------|
+| `app/main.py` | FastAPI app factory; router includes; exception handlers; lifespan (DB init) |
+| `app/core/config.py` | `Settings` via `pydantic-settings`; env-driven DB URL |
+| `app/core/exceptions.py` | Domain exceptions (`EmployeeNotFound`, `DuplicateEmployeeEmail`) |
+| `app/db/base.py` | `Base = DeclarativeBase` |
+| `app/db/session.py` | engine, `SessionLocal`, `get_db()` dependency |
+| `app/db/seed.py` | Seed entry-point; uses bulk insert (see seed skill) |
+| `app/models/employee.py` | `Employee` ORM model |
+| `app/schemas/employee.py` | `EmployeeCreate`, `EmployeeUpdate`, `EmployeeRead` |
+| `app/repositories/employee_repository.py` | All SQL for the Employee aggregate |
+| `app/services/employee_service.py` | Employee CRUD use cases |
+| `app/services/salary_insights_service.py` | Min/max/avg by country and by job title |
+| `app/api/routes/employees.py` | `/employees` endpoints |
+| `app/api/routes/insights.py` | `/insights/*` endpoints |
+
+## Tests (`tests/`)
+
+| Path | Covers |
+|------|--------|
+| `tests/conftest.py` | engine, db, client fixtures |
+| `tests/unit/test_employee_service.py` | service-level CRUD behavior |
+| `tests/unit/test_salary_insights_service.py` | aggregations |
+| `tests/integration/test_employees_api.py` | HTTP layer for employees |
+| `tests/integration/test_insights_api.py` | HTTP layer for insights |
+| `tests/seed/test_seed_script.py` | seed correctness + perf budget |
+
+## Frontend (`frontend/`)
+
+Stack: React 18 + Vite + TypeScript (strict) + Tailwind CSS + shadcn/ui + TanStack Query + TanStack Table + Recharts. UI generation is driven by the Stitch MCP (`.cursor/mcp.json`).
+
+| Path | Responsibility |
+|------|----------------|
+| `frontend/src/main.tsx` | React entry, `QueryClientProvider`, Router |
+| `frontend/src/App.tsx` | Layout + routes |
+| `frontend/src/components/ui/` | shadcn-generated primitives (Button, Card, Input, Dialog, Table, ...) |
+| `frontend/src/components/employees/` | Employee domain components (EmployeeTable, EmployeeForm) |
+| `frontend/src/components/analytics/` | Insights domain components (charts, KPI cards) |
+| `frontend/src/components/dashboard/` | Dashboard widgets (KpiGrid, RecentEmployees) |
+| `frontend/src/components/layout/` | AppShell, Sidebar, TopBar |
+| `frontend/src/pages/EmployeesPage.tsx` | Route: employee list + create/edit dialog |
+| `frontend/src/pages/InsightsPage.tsx` | Route: country and job-title insights |
+| `frontend/src/pages/DashboardPage.tsx` | Route: KPI overview |
+| `frontend/src/hooks/` | Shared hooks (`useEmployees`, `useCreateEmployee`, `useDebounce`, ...) |
+| `frontend/src/services/client.ts` | Base fetcher, `ApiError` |
+| `frontend/src/services/employees.ts` | Typed employee API |
+| `frontend/src/services/insights.ts` | Typed insights API |
+| `frontend/src/lib/` | Pure helpers (formatters, validators) |
+| `frontend/src/types/` | Shared TS types and API contracts |
+| `frontend/src/test/setup.ts` | Vitest + RTL setup (`@testing-library/jest-dom/vitest`) |
+
+## Scripts (`scripts/`)
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/seed.py` | Run the seed (10k employees) |
+| `scripts/benchmark_seed.py` | Time the seed; record to `artifacts/performance.md` |
+
+## See also
+
+- `incubyte-fastapi-core.mdc` — the layering rules.
+- `incubyte-frontend-react.mdc` — frontend conventions.
+- `incubyte-testing.mdc` — tests directory layout.
