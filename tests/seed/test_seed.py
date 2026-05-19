@@ -1,0 +1,35 @@
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
+
+from app.db.seed import run as seed_run
+from app.models.employee import Employee
+
+
+class TestSeedRun:
+    def test_run_inserts_requested_count(self, db: Session) -> None:
+        seed_run(db, count=100, rng_seed=1)
+        total = db.execute(select(func.count(Employee.id))).scalar_one()
+        assert total == 100
+
+    def test_run_is_deterministic_with_same_seed(self, db: Session) -> None:
+        seed_run(db, count=10, rng_seed=42)
+        first = [
+            (e.full_name, e.country, e.salary)
+            for e in db.scalars(select(Employee).order_by(Employee.id))
+        ]
+        db.query(Employee).delete()
+        db.commit()
+
+        seed_run(db, count=10, rng_seed=42)
+        second = [
+            (e.full_name, e.country, e.salary)
+            for e in db.scalars(select(Employee).order_by(Employee.id))
+        ]
+
+        assert first == second
+
+    def test_run_with_reset_clears_existing_rows(self, db: Session) -> None:
+        seed_run(db, count=5, rng_seed=1)
+        seed_run(db, count=3, rng_seed=1, reset=True)
+        total = db.execute(select(func.count(Employee.id))).scalar_one()
+        assert total == 3
