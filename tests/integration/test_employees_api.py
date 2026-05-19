@@ -93,3 +93,23 @@ class TestListEmployeesAPI:
         rows = client.get("/employees", params={"country": "IN"}).json()
 
         assert [row["full_name"] for row in rows] == ["Indian"]
+
+
+class TestUpdateEmployeeAPI:
+    def test_put_employee_updates_provided_fields(self, client: TestClient) -> None:
+        created = client.post("/employees", json=_valid_payload()).json()
+
+        response = client.put(
+            f"/employees/{created['id']}",
+            json={"job_title": "Senior Engineer", "salary": "75000.00"},
+        )
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["job_title"] == "Senior Engineer"
+        assert body["salary"] == "75000.00"
+        assert body["full_name"] == "Jane Doe"  # unchanged
+
+    def test_put_missing_employee_returns_404(self, client: TestClient) -> None:
+        response = client.put("/employees/9999", json={"job_title": "X"})
+        assert response.status_code == 404
