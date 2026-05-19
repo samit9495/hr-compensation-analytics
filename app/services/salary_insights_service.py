@@ -25,3 +25,13 @@ class SalaryInsightsService:
         if result is None:
             return Decimal("0.00")
         return Decimal(result).quantize(SALARY_SCALE)
+
+    def min_max_salary_by_country(self, country: str) -> tuple[Decimal, Decimal]:
+        row = self.db.execute(
+            select(func.min(Employee.salary), func.max(Employee.salary)).where(
+                Employee.country == country
+            )
+        ).one()
+        if row[0] is None:
+            return (Decimal("0.00"), Decimal("0.00"))
+        return (Decimal(row[0]).quantize(SALARY_SCALE), Decimal(row[1]).quantize(SALARY_SCALE))
