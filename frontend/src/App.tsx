@@ -1,12 +1,28 @@
+import { QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
+import { AppShell } from "@/components/AppShell";
+import { createQueryClient } from "@/lib/queryClient";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { EmployeesPage } from "@/pages/EmployeesPage";
+import { InsightsPage } from "@/pages/InsightsPage";
+
 export default function App() {
+  const [queryClient] = useState(() => createQueryClient());
+
   return (
-    <main className="flex min-h-full items-center justify-center p-8">
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-900">Salary Management</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Frontend bootstrapped. Routes and screens land in Phases 6–8.
-        </p>
-      </div>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="employees" element={<EmployeesPage />} />
+            <Route path="insights" element={<InsightsPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
