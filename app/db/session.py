@@ -1,9 +1,10 @@
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
+from app.db.base import Base
 
 _settings = get_settings()
 
@@ -22,3 +23,11 @@ def get_db() -> Iterator[Session]:
         yield session
     finally:
         session.close()
+
+
+def init_db(target_engine: Engine) -> None:
+    """Create every table registered on Base.metadata.
+
+    Imported here so any model module attached to Base will be picked up.
+    """
+    Base.metadata.create_all(bind=target_engine)

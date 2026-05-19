@@ -1,7 +1,17 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.core.exceptions import DomainError
+from app.db.session import engine, init_db
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    init_db(engine)
+    yield
 
 
 def register_exception_handlers(app: FastAPI) -> None:
@@ -13,7 +23,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
 
-app = FastAPI(title="Salary Management API")
+app = FastAPI(title="Salary Management API", lifespan=lifespan)
 register_exception_handlers(app)
 
 
