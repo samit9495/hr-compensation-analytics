@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     allowed_origins: Annotated[list[str], NoDecode, BeforeValidator(_parse_origins)] = [
         "http://localhost:5173"
     ]
+    log_level: str = "INFO"
+    log_sql: bool = False
 
 
 def get_settings() -> Settings:
