@@ -12,6 +12,26 @@ _(seed with whatever the user hands you next; the implementation work is not sta
 
 ## Completed
 
+### 2026-05-20 — Salary Management end-to-end build
+- [x] Phase 0  — environment bootstrap (Python 3.12 venv, backend + frontend stack verified)
+- [x] Phase 1  — backend foundation (FastAPI, Settings, DB session, domain exceptions, CORS, lifespan)
+- [x] Phase 2  — Employee CRUD (model, repo, service, all 5 endpoints, pagination/filter/sort/search, 404/409)
+- [x] Phase 3  — Salary insights (avg/min/max/count by country, avg by (country,title), top titles)
+- [x] Phase 4  — Seed script (deterministic, bulk insert, `--reset`, CLI, perf budget test)
+- [x] Phase 5  — Frontend foundation (Vite + TS strict, Tailwind v4, TanStack Query, Router, Vitest)
+- [x] Phase 6  — Employees UI (table, filters, RHF + Zod form, create/edit/delete, error toasts)
+- [x] Phase 7  — Insights UI (country selector, KPI cards, by-title bar chart)
+- [x] Phase 8  — Dashboard (overview KPIs + recent hires + country distribution chart)
+- [x] Phase 9  — Cross-cutting hardening (X-Total-Count header, CORS expose, indexes already in model)
+- [x] Phase 10 — QA + coverage (Pagination + Filters tests, manual scenarios doc; backend 99% line coverage)
+- [x] Phase 11 — Documentation (README, architecture, trade-offs, prompts log)
+- [x] Phase 12 — Deployment (Dockerfile, fly.toml, vercel.json, env example, comma-separated origins)
+- [x] Phase 13 — Final commit-log audit + tasks sweep
+- **Status**: done
+- **Summary**: 95 commits, clean test/feat/refactor cadence. Backend 69 tests
+  + 99% line coverage; frontend 24 tests; seed 10k rows in 0.09s
+  (budget 5s). Deployment artifacts ready for Fly.io + Vercel.
+
 ### 2026-05-20 — Artifact audit step + post-commit reminder hook
 - [x] Add Step 9 (Artifact audit) to `.cursor/skills/incubyte-tdd-loop/SKILL.md` (renumbered Loop-back to Step 10)
 - [x] Add `scripts/git-hooks/post-commit` reminder script (executable, no-op when nothing matches)
