@@ -1,5 +1,6 @@
 import { SalaryBarChart, type SalaryBarChartDatum } from "@/components/SalaryBarChart";
-import type { PayrollBurdenResponse } from "@/services/types";
+import { SummaryList, type SummaryListItem } from "@/components/SummaryList";
+import type { PayrollBurdenResponse, PayrollEntry } from "@/services/types";
 
 type Props = {
   ariaLabel: string;
@@ -17,6 +18,21 @@ function toChartData(payroll: PayrollBurdenResponse | undefined): SalaryBarChart
   }));
 }
 
+function toSummaryItems(entries: PayrollEntry[]): SummaryListItem[] {
+  return entries.map((entry) => ({
+    key: entry.key,
+    label: entry.key,
+    value: (
+      <>
+        <span className="text-slate-800">{Number(entry.total).toLocaleString()}</span>
+        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+          {entry.percentage}%
+        </span>
+      </>
+    ),
+  }));
+}
+
 export function PayrollBreakdown({
   ariaLabel,
   payroll,
@@ -25,7 +41,7 @@ export function PayrollBreakdown({
   emptyMessage = "No payroll data yet.",
 }: Props) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {payroll && (
         <p className="text-xs text-slate-500">
           Total payroll: {Number(payroll.total).toLocaleString()}
@@ -48,14 +64,10 @@ export function PayrollBreakdown({
             emptyMessage={emptyMessage}
           />
           {payroll && payroll.entries.length > 0 && (
-            <ul className="grid grid-cols-1 gap-1 text-xs text-slate-600 sm:grid-cols-2 md:grid-cols-3">
-              {payroll.entries.map((entry) => (
-                <li key={entry.key} className="flex justify-between gap-3 tabular-nums">
-                  <span className="font-medium text-slate-700">{entry.key}</span>
-                  <span>{entry.percentage}%</span>
-                </li>
-              ))}
-            </ul>
+            <SummaryList
+              ariaLabel={`${ariaLabel} breakdown`}
+              items={toSummaryItems(payroll.entries)}
+            />
           )}
         </>
       )}
