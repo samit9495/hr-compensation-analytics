@@ -36,6 +36,12 @@ class TestCreateEmployeeAPI:
         response = client.post("/employees", json=_valid_payload(full_name=""))
         assert response.status_code == 422
 
+    def test_post_employees_uppercases_lowercase_country(self, client: TestClient) -> None:
+        response = client.post("/employees", json=_valid_payload(country="in"))
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json()["country"] == "IN"
+
 
 class TestGetEmployeeAPI:
     def test_get_employee_by_id_returns_200_with_row(self, client: TestClient) -> None:
