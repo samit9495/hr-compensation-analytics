@@ -54,6 +54,17 @@ export type CompensationAnalysisResponse = {
   analyses: EmployeeCompensationAnalysis[];
 };
 
+export type PayrollEntry = {
+  key: string;
+  total: string;
+  percentage: string;
+};
+
+export type PayrollBurdenResponse = {
+  total: string;
+  entries: PayrollEntry[];
+};
+
 export type CountryOptionList = {
   countries: CountryOption[];
 };

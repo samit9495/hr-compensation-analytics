@@ -2,14 +2,18 @@ import { useState } from "react";
 
 import { CountryCombobox } from "@/components/CountryCombobox";
 import { KpiCard } from "@/components/KpiCard";
+import { PayrollBreakdown } from "@/components/PayrollBreakdown";
 import { TitleAveragesChart } from "@/components/TitleAveragesChart";
 import { useCountryInsights, useCountryTitleAverages } from "@/hooks/useInsights";
+import { usePayrollByCountry, usePayrollByTitle } from "@/hooks/usePayrollBurden";
 
 export function InsightsPage() {
   const [country, setCountry] = useState<string | null>("IN");
 
   const summary = useCountryInsights(country ?? "");
   const breakdown = useCountryTitleAverages(country ?? "");
+  const payrollByCountry = usePayrollByCountry();
+  const payrollByTitle = usePayrollByTitle();
 
   return (
     <section aria-labelledby="insights-heading" className="space-y-4">
@@ -58,6 +62,24 @@ export function InsightsPage() {
       ) : breakdown.data ? (
         <TitleAveragesChart averages={breakdown.data.averages} />
       ) : null}
+
+      <h2 className="pt-4 text-lg font-semibold text-slate-800">
+        Total compensation burden
+      </h2>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <PayrollBreakdown
+          title="By country"
+          payroll={payrollByCountry.data}
+          isLoading={payrollByCountry.isLoading}
+          isError={payrollByCountry.isError}
+        />
+        <PayrollBreakdown
+          title="By job title"
+          payroll={payrollByTitle.data}
+          isLoading={payrollByTitle.isLoading}
+          isError={payrollByTitle.isError}
+        />
+      </div>
     </section>
   );
 }

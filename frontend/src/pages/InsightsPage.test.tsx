@@ -11,6 +11,8 @@ vi.mock("@/services/insights", () => ({
     byCountry: vi.fn(),
     byCountryAndTitle: vi.fn(),
     topTitles: vi.fn(),
+    payrollByCountry: vi.fn(),
+    payrollByTitle: vi.fn(),
   },
 }));
 
@@ -23,6 +25,8 @@ vi.mock("@/services/employees", () => ({
 const apiMock = insightsApi as unknown as {
   byCountry: ReturnType<typeof vi.fn>;
   byCountryAndTitle: ReturnType<typeof vi.fn>;
+  payrollByCountry: ReturnType<typeof vi.fn>;
+  payrollByTitle: ReturnType<typeof vi.fn>;
 };
 
 const employeesMock = employeesApi as unknown as {
@@ -43,6 +47,10 @@ function renderPage() {
 beforeEach(() => {
   apiMock.byCountry.mockReset();
   apiMock.byCountryAndTitle.mockReset();
+  apiMock.payrollByCountry.mockReset();
+  apiMock.payrollByTitle.mockReset();
+  apiMock.payrollByCountry.mockResolvedValue({ total: "0.00", entries: [] });
+  apiMock.payrollByTitle.mockResolvedValue({ total: "0.00", entries: [] });
   employeesMock.countries.mockReset();
   employeesMock.countries.mockResolvedValue({
     countries: [{ code: "IN", count: 1 }],
@@ -50,6 +58,34 @@ beforeEach(() => {
 });
 
 describe("InsightsPage", () => {
+  it("renders the payroll breakdown sections", async () => {
+    apiMock.byCountry.mockResolvedValue({
+      country: "IN",
+      average_salary: "100000.00",
+      min_salary: "30000.00",
+      max_salary: "250000.00",
+      employee_count: 1,
+    });
+    apiMock.byCountryAndTitle.mockResolvedValue({ country: "IN", averages: {} });
+    apiMock.payrollByCountry.mockResolvedValue({
+      total: "1000.00",
+      entries: [
+        { key: "IN", total: "700.00", percentage: "70.00" },
+        { key: "US", total: "300.00", percentage: "30.00" },
+      ],
+    });
+    apiMock.payrollByTitle.mockResolvedValue({ total: "0.00", entries: [] });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { name: /total compensation burden/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("img", { name: /by country/i }),
+    ).toBeInTheDocument();
+  });
+
   it("renders KPI cards for the default country", async () => {
     apiMock.byCountry.mockResolvedValue({
       country: "IN",

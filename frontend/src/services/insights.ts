@@ -5,6 +5,7 @@ import type {
   CountryTitleAverages,
   Employee,
   GlobalOverview,
+  PayrollBurdenResponse,
   TopTitles,
 } from "@/services/types";
 
@@ -26,5 +27,11 @@ export const insightsApi = {
   },
   distribution(): Promise<CountryDistribution> {
     return apiFetch<CountryDistribution>(`/insights/distribution`);
+  },
+  payrollByCountry(): Promise<PayrollBurdenResponse> {
+    return apiFetch<PayrollBurdenResponse>(`/insights/payroll/by-country`);
+  },
+  payrollByTitle(): Promise<PayrollBurdenResponse> {
+    return apiFetch<PayrollBurdenResponse>(`/insights/payroll/by-title`);
   },
 };
