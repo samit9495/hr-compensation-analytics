@@ -99,6 +99,32 @@ class TestEmployeesCountryQueryCaseInsensitive:
         assert [row["country"] for row in body] == ["IN"]
 
 
+class TestOutliersEndpoint:
+    def _seed(self, client: TestClient) -> None:
+        for i in range(1, 21):
+            _post(client, job_title="Engineer", country="IN", salary=str(i))
+
+    def test_default_returns_bottom_bucket(self, client: TestClient) -> None:
+        self._seed(client)
+
+        body = client.get("/insights/outliers", params={"bucket": "bottom"}).json()
+
+        assert body["bucket"] == "bottom"
+        assert any(e["bucket"] == 1 for e in body["entries"])
+
+    def test_top_bucket(self, client: TestClient) -> None:
+        self._seed(client)
+
+        body = client.get("/insights/outliers", params={"bucket": "top"}).json()
+
+        assert body["bucket"] == "top"
+        assert any(e["bucket"] == 20 for e in body["entries"])
+
+    def test_rejects_unknown_bucket(self, client: TestClient) -> None:
+        response = client.get("/insights/outliers", params={"bucket": "middle"})
+        assert response.status_code == 422
+
+
 class TestPayrollBurdenEndpoints:
     def test_payroll_by_country_returns_totals_and_percentages(self, client: TestClient) -> None:
         _post(client, country="IN", salary="40")
