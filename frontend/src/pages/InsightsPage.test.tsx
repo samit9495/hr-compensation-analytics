@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { InsightsPage } from "@/pages/InsightsPage";
 import { employeesApi } from "@/services/employees";
 import { insightsApi } from "@/services/insights";
@@ -41,7 +42,9 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <InsightsPage />
+      <TooltipProvider delayDuration={0}>
+        <InsightsPage />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -125,6 +128,62 @@ describe("InsightsPage", () => {
     expect(
       await screen.findByRole("img", { name: /by country/i }),
     ).toBeInTheDocument();
+  });
+
+  it("exposes info tooltips beside the advanced analytics sections", async () => {
+    apiMock.byCountry.mockResolvedValue({
+      country: "IN",
+      average_salary: "100000.00",
+      min_salary: "30000.00",
+      max_salary: "250000.00",
+      employee_count: 1,
+    });
+    apiMock.byCountryAndTitle.mockResolvedValue({ country: "IN", averages: {} });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", { name: /average salary by job title/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /total compensation burden/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /compensation outliers/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("stacks payroll breakdown vertically with Job Title first then Country", async () => {
+    apiMock.byCountry.mockResolvedValue({
+      country: "IN",
+      average_salary: "100000.00",
+      min_salary: "30000.00",
+      max_salary: "250000.00",
+      employee_count: 1,
+    });
+    apiMock.byCountryAndTitle.mockResolvedValue({ country: "IN", averages: {} });
+    apiMock.payrollByCountry.mockResolvedValue({
+      total: "0.00",
+      entries: [],
+    });
+    apiMock.payrollByTitle.mockResolvedValue({
+      total: "0.00",
+      entries: [],
+    });
+
+    renderPage();
+
+    const titleHeading = await screen.findByRole("heading", {
+      name: /^by job title$/i,
+    });
+    const countryHeading = await screen.findByRole("heading", {
+      name: /^by country$/i,
+    });
+
+    expect(
+      titleHeading.compareDocumentPosition(countryHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("renders KPI cards for the default country", async () => {
