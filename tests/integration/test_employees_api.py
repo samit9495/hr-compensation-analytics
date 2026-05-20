@@ -101,6 +101,30 @@ class TestListEmployeesAPI:
         assert len(response.json()) == 2
 
 
+class TestCompensationAnalysisEndpoint:
+    def test_returns_compa_ratio_and_penetration_per_employee(self, client: TestClient) -> None:
+        a = client.post("/employees", json=_valid_payload(salary="80.00")).json()
+        b = client.post("/employees", json=_valid_payload(salary="120.00")).json()
+
+        body = client.get("/employees/compensation-analysis").json()
+        analyses = {item["id"]: item for item in body["analyses"]}
+
+        assert analyses[a["id"]]["compa_ratio"] == "0.8000"
+        assert analyses[b["id"]]["compa_ratio"] == "1.2000"
+        assert analyses[a["id"]]["range_penetration"] == "0.0000"
+        assert analyses[b["id"]]["range_penetration"] == "1.0000"
+
+    def test_respects_country_and_q_filters(self, client: TestClient) -> None:
+        client.post("/employees", json=_valid_payload(country="IN", full_name="Jane"))
+        client.post("/employees", json=_valid_payload(country="US", full_name="John"))
+
+        body = client.get(
+            "/employees/compensation-analysis", params={"country": "IN"}
+        ).json()
+
+        assert len(body["analyses"]) == 1
+
+
 class TestListDistinctCountries:
     def test_returns_each_country_with_count(self, client: TestClient) -> None:
         client.post("/employees", json=_valid_payload(country="IN"))
