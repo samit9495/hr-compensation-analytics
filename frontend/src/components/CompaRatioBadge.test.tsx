@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { CompaRatioBadge, compaRatioBucket } from "@/components/CompaRatioBadge";
+import { CompaRatioBadge } from "@/components/CompaRatioBadge";
+import { compaRatioBucket } from "@/components/CompaRatioBadge.utils";
 
 describe("compaRatioBucket", () => {
   it.each([

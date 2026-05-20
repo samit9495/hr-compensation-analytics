@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { formatCompactCurrency, SalaryBarChart } from "@/components/SalaryBarChart";
+import { SalaryBarChart } from "@/components/SalaryBarChart";
+import { formatCompactCurrency } from "@/components/SalaryBarChart.utils";
 
 describe("formatCompactCurrency", () => {
   it("renders thousands with a K suffix", () => {
