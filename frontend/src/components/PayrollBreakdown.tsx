@@ -2,7 +2,7 @@ import { SalaryBarChart, type SalaryBarChartDatum } from "@/components/SalaryBar
 import type { PayrollBurdenResponse } from "@/services/types";
 
 type Props = {
-  title: string;
+  ariaLabel: string;
   payroll: PayrollBurdenResponse | undefined;
   isLoading: boolean;
   isError: boolean;
@@ -18,22 +18,19 @@ function toChartData(payroll: PayrollBurdenResponse | undefined): SalaryBarChart
 }
 
 export function PayrollBreakdown({
-  title,
+  ariaLabel,
   payroll,
   isLoading,
   isError,
   emptyMessage = "No payroll data yet.",
 }: Props) {
   return (
-    <section className="space-y-3">
-      <header className="flex items-baseline justify-between">
-        <h3 className="text-base font-semibold text-slate-800">{title}</h3>
-        {payroll && (
-          <p className="text-xs text-slate-500">
-            Total payroll: {Number(payroll.total).toLocaleString()}
-          </p>
-        )}
-      </header>
+    <div className="space-y-3">
+      {payroll && (
+        <p className="text-xs text-slate-500">
+          Total payroll: {Number(payroll.total).toLocaleString()}
+        </p>
+      )}
 
       {isLoading ? (
         <p role="status" className="text-sm text-slate-500">
@@ -47,7 +44,7 @@ export function PayrollBreakdown({
         <>
           <SalaryBarChart
             data={toChartData(payroll)}
-            ariaLabel={title}
+            ariaLabel={ariaLabel}
             emptyMessage={emptyMessage}
           />
           {payroll && payroll.entries.length > 0 && (
@@ -62,6 +59,6 @@ export function PayrollBreakdown({
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }

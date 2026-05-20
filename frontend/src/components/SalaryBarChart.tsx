@@ -59,7 +59,7 @@ export function SalaryBarChart({
       role="img"
       aria-label={ariaLabel}
       style={{ height }}
-      className="w-full rounded-md border border-slate-200 bg-white p-4"
+      className="w-full"
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
