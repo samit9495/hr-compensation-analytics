@@ -33,16 +33,16 @@ export function DashboardPage() {
       ) : overview.data ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard label="Employees" value={String(overview.data.total_employees)} />
-          <KpiCard label="Average salary" value={overview.data.average_salary} />
+          <KpiCard label="Average Salary" value={overview.data.average_salary} />
           <KpiCard label="Countries" value={String(overview.data.active_countries)} />
-          <KpiCard label="Job titles" value={String(overview.data.active_titles)} />
+          <KpiCard label="Job Titles" value={String(overview.data.active_titles)} />
         </div>
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section aria-labelledby="distribution-heading">
           <h2 id="distribution-heading" className="mb-2 text-lg font-semibold text-slate-800">
-            Employees by country
+            Employees by Country
           </h2>
           {distribution.isLoading ? (
             <p role="status" className="text-sm text-slate-500">
@@ -55,7 +55,7 @@ export function DashboardPage() {
 
         <section aria-labelledby="recent-heading">
           <h2 id="recent-heading" className="mb-2 text-lg font-semibold text-slate-800">
-            Recent hires
+            Recent Hires
           </h2>
           {recent.isLoading ? (
             <p role="status" className="text-sm text-slate-500">

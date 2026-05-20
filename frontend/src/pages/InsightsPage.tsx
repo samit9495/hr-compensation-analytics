@@ -50,7 +50,7 @@ export function InsightsPage() {
       ) : null}
 
       <h2 className="pt-2 text-lg font-semibold text-slate-800">
-        Average salary by job title
+        Average Salary by Job Title
       </h2>
       {country === null ? null : breakdown.isLoading ? (
         <p role="status" className="text-sm text-slate-500">
@@ -65,24 +65,24 @@ export function InsightsPage() {
       ) : null}
 
       <h2 className="pt-4 text-lg font-semibold text-slate-800">
-        Total compensation burden
+        Total Compensation Burden
       </h2>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <PayrollBreakdown
-          title="By country"
+          title="By Country"
           payroll={payrollByCountry.data}
           isLoading={payrollByCountry.isLoading}
           isError={payrollByCountry.isError}
         />
         <PayrollBreakdown
-          title="By job title"
+          title="By Job Title"
           payroll={payrollByTitle.data}
           isLoading={payrollByTitle.isLoading}
           isError={payrollByTitle.isError}
         />
       </div>
 
-      <h2 className="pt-4 text-lg font-semibold text-slate-800">Compensation outliers</h2>
+      <h2 className="pt-4 text-lg font-semibold text-slate-800">Compensation Outliers</h2>
       <OutlierTables />
     </section>
   );

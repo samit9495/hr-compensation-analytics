@@ -2,8 +2,8 @@ import { useOutliers } from "@/hooks/useOutliers";
 import type { OutlierBucket, OutlierEntry } from "@/services/types";
 
 const BUCKET_LABEL: Record<OutlierBucket, string> = {
-  bottom: "Bottom 5% — retention risk",
-  top: "Top 5% — budget review",
+  bottom: "Bottom 5% — Retention Risk",
+  top: "Top 5% — Budget Review",
 };
 
 const BUCKET_DESCRIPTION: Record<OutlierBucket, string> = {
