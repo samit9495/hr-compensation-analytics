@@ -9,6 +9,7 @@ from app.api.middleware.request_context import (
     RequestContextMiddleware,
 )
 from app.core.logging import request_id_var
+from app.main import register_exception_handlers
 
 MIDDLEWARE_LOGGER = "app.api.middleware.request_context"
 
@@ -81,3 +82,47 @@ def test_health_check_logs_at_debug_not_info(
     assert len(middleware_records) == 1
     assert middleware_records[0].levelno == logging.DEBUG
     assert middleware_records[0].path == "/"
+
+
+def test_emits_access_log_with_500_when_handler_raises(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The access log must still fire when the route raises.
+
+    Starlette's ``ServerErrorMiddleware`` sits *outside* this user
+    middleware, so an unhandled exception bubbles past
+    :meth:`RequestContextMiddleware.dispatch` before any post-call code
+    runs. Without an emit-on-error path the middleware silently drops
+    the request from the structured access log, leaving operators
+    blind to the very requests that need most attention.
+
+    Locks that contract in so the error path is observable end-to-end.
+    """
+    app = FastAPI()
+    app.add_middleware(RequestContextMiddleware)
+    register_exception_handlers(app)
+
+    @app.get("/boom")
+    def boom() -> None:
+        raise RuntimeError("kaboom")
+
+    caplog.set_level(logging.DEBUG)
+
+    response = TestClient(app, raise_server_exceptions=False).get("/boom")
+
+    assert response.status_code == 500
+
+    records = [r for r in caplog.records if r.name == MIDDLEWARE_LOGGER]
+    assert len(records) == 1
+    record = records[0]
+    assert record.levelno == logging.INFO
+    assert record.method == "GET"
+    assert record.path == "/boom"
+    assert record.status_code == 500
+    assert isinstance(record.duration_ms, float)
+    assert record.duration_ms >= 0
+    # ``ServerErrorMiddleware`` wraps the response *above* this
+    # middleware on the error path, so no ``X-Request-ID`` header reaches
+    # the client. The log record is the only correlation handle, so it
+    # must still carry a non-empty request id.
+    assert isinstance(record.request_id, str) and record.request_id
