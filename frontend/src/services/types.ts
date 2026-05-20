@@ -36,6 +36,20 @@ export type EmployeeListResult = {
   total: number;
 };
 
+export type CountryOption = {
+  code: string;
+  count: number;
+};
+
+export type CountryOptionList = {
+  countries: CountryOption[];
+};
+
+export type CountriesFilter = {
+  country?: string;
+  q?: string;
+};
+
 export type CountryInsights = {
   country: string;
   average_salary: string;

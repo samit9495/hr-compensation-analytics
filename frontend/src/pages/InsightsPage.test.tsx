@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { InsightsPage } from "@/pages/InsightsPage";
+import { employeesApi } from "@/services/employees";
 import { insightsApi } from "@/services/insights";
 
 vi.mock("@/services/insights", () => ({
@@ -13,9 +14,19 @@ vi.mock("@/services/insights", () => ({
   },
 }));
 
+vi.mock("@/services/employees", () => ({
+  employeesApi: {
+    countries: vi.fn(),
+  },
+}));
+
 const apiMock = insightsApi as unknown as {
   byCountry: ReturnType<typeof vi.fn>;
   byCountryAndTitle: ReturnType<typeof vi.fn>;
+};
+
+const employeesMock = employeesApi as unknown as {
+  countries: ReturnType<typeof vi.fn>;
 };
 
 function renderPage() {
@@ -32,6 +43,10 @@ function renderPage() {
 beforeEach(() => {
   apiMock.byCountry.mockReset();
   apiMock.byCountryAndTitle.mockReset();
+  employeesMock.countries.mockReset();
+  employeesMock.countries.mockResolvedValue({
+    countries: [{ code: "IN", count: 1 }],
+  });
 });
 
 describe("InsightsPage", () => {

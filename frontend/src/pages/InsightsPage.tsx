@@ -1,14 +1,15 @@
 import { useState } from "react";
 
+import { CountryCombobox } from "@/components/CountryCombobox";
 import { KpiCard } from "@/components/KpiCard";
 import { TitleAveragesChart } from "@/components/TitleAveragesChart";
 import { useCountryInsights, useCountryTitleAverages } from "@/hooks/useInsights";
 
 export function InsightsPage() {
-  const [country, setCountry] = useState("IN");
+  const [country, setCountry] = useState<string | null>("IN");
 
-  const summary = useCountryInsights(country);
-  const breakdown = useCountryTitleAverages(country);
+  const summary = useCountryInsights(country ?? "");
+  const breakdown = useCountryTitleAverages(country ?? "");
 
   return (
     <section aria-labelledby="insights-heading" className="space-y-4">
@@ -16,18 +17,17 @@ export function InsightsPage() {
         <h1 id="insights-heading" className="text-2xl font-semibold text-slate-900">
           Insights
         </h1>
-        <label className="space-y-1 text-sm">
+        <div className="space-y-1 text-sm">
           <span className="font-medium text-slate-700">Country</span>
-          <input
-            className="form-input w-28 uppercase"
-            maxLength={2}
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-          />
-        </label>
+          <CountryCombobox value={country} onChange={setCountry} />
+        </div>
       </header>
 
-      {summary.isLoading ? (
+      {country === null ? (
+        <p role="status" className="text-sm text-slate-500">
+          Select a country to see insights.
+        </p>
+      ) : summary.isLoading ? (
         <p role="status" className="text-sm text-slate-500">
           Loading insights for {country}…
         </p>
@@ -47,7 +47,7 @@ export function InsightsPage() {
       <h2 className="pt-2 text-lg font-semibold text-slate-800">
         Average salary by job title
       </h2>
-      {breakdown.isLoading ? (
+      {country === null ? null : breakdown.isLoading ? (
         <p role="status" className="text-sm text-slate-500">
           Loading breakdown…
         </p>

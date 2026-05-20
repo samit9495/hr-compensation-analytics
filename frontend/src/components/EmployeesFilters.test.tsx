@@ -1,16 +1,48 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EmployeesFilters } from "@/components/EmployeesFilters";
+import { employeesApi } from "@/services/employees";
+
+vi.mock("@/services/employees", () => ({
+  employeesApi: {
+    countries: vi.fn(),
+  },
+}));
+
+const apiMock = employeesApi as unknown as {
+  countries: ReturnType<typeof vi.fn>;
+};
+
+function renderFilters(onApply: (next: unknown) => void) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <EmployeesFilters onApply={onApply} />
+    </QueryClientProvider>,
+  );
+}
+
+beforeEach(() => {
+  apiMock.countries.mockReset();
+  apiMock.countries.mockResolvedValue({
+    countries: [
+      { code: "IN", count: 12 },
+      { code: "US", count: 9 },
+    ],
+  });
+});
 
 describe("EmployeesFilters", () => {
-  it("uppercases the country and applies filters with non-empty values only", async () => {
+  it("applies the selected country from the combobox", async () => {
     const onApply = vi.fn();
-    render(<EmployeesFilters onApply={onApply} />);
+    renderFilters(onApply);
 
     await userEvent.type(screen.getByLabelText(/search name/i), "ja");
-    await userEvent.type(screen.getByLabelText(/country/i), "in");
+    await userEvent.click(await screen.findByRole("combobox", { name: /country/i }));
+    await userEvent.click(await screen.findByText("IN"));
     await userEvent.selectOptions(screen.getByLabelText(/sort/i), "-salary");
     await userEvent.click(screen.getByRole("button", { name: /apply/i }));
 
@@ -19,7 +51,7 @@ describe("EmployeesFilters", () => {
 
   it("omits empty values from the apply payload", async () => {
     const onApply = vi.fn();
-    render(<EmployeesFilters onApply={onApply} />);
+    renderFilters(onApply);
 
     await userEvent.click(screen.getByRole("button", { name: /apply/i }));
 

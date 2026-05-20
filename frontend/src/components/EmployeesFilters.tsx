@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { CountryCombobox } from "@/components/CountryCombobox";
 import type { EmployeeListParams } from "@/services/types";
 
 type Props = {
@@ -9,7 +10,7 @@ type Props = {
 
 export function EmployeesFilters({ initial = {}, onApply }: Props) {
   const [q, setQ] = useState(initial.q ?? "");
-  const [country, setCountry] = useState(initial.country ?? "");
+  const [country, setCountry] = useState<string | null>(initial.country ?? null);
   const [sort, setSort] = useState(initial.sort ?? "");
 
   return (
@@ -21,7 +22,7 @@ export function EmployeesFilters({ initial = {}, onApply }: Props) {
         e.preventDefault();
         onApply({
           q: q || undefined,
-          country: country ? country.toUpperCase() : undefined,
+          country: country ?? undefined,
           sort: sort || undefined,
         });
       }}
@@ -35,16 +36,14 @@ export function EmployeesFilters({ initial = {}, onApply }: Props) {
           onChange={(e) => setQ(e.target.value)}
         />
       </label>
-      <label className="space-y-1 text-sm">
+      <div className="space-y-1 text-sm">
         <span className="font-medium text-slate-700">Country</span>
-        <input
-          className="form-input w-24 uppercase"
-          maxLength={2}
-          placeholder="IN"
+        <CountryCombobox
           value={country}
-          onChange={(e) => setCountry(e.target.value)}
+          onChange={setCountry}
+          filter={{ q: q || undefined }}
         />
-      </label>
+      </div>
       <label className="space-y-1 text-sm">
         <span className="font-medium text-slate-700">Sort</span>
         <select

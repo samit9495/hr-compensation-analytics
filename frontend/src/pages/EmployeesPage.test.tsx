@@ -14,6 +14,7 @@ vi.mock("@/services/employees", () => ({
     create: vi.fn(),
     update: vi.fn(),
     remove: vi.fn(),
+    countries: vi.fn(),
   },
 }));
 
@@ -22,6 +23,7 @@ const apiMock = employeesApi as unknown as {
   create: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
+  countries: ReturnType<typeof vi.fn>;
 };
 
 function renderPage() {
@@ -52,6 +54,8 @@ beforeEach(() => {
   apiMock.create.mockReset();
   apiMock.update.mockReset();
   apiMock.remove.mockReset();
+  apiMock.countries.mockReset();
+  apiMock.countries.mockResolvedValue({ countries: [] });
 });
 
 describe("EmployeesPage", () => {

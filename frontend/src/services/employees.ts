@@ -1,11 +1,21 @@
 import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
+  CountriesFilter,
+  CountryOptionList,
   Employee,
   EmployeeCreate,
   EmployeeListParams,
   EmployeeUpdate,
   EmployeeListResult,
 } from "@/services/types";
+
+function toCountriesQuery(params: CountriesFilter): string {
+  const search = new URLSearchParams();
+  if (params.country) search.set("country", params.country);
+  if (params.q) search.set("q", params.q);
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
 
 function toQuery(params: EmployeeListParams): string {
   const search = new URLSearchParams();
@@ -38,5 +48,8 @@ export const employeesApi = {
   },
   remove(id: number): Promise<void> {
     return apiFetch<void>(`/employees/${id}`, { method: "DELETE" });
+  },
+  countries(filter: CountriesFilter = {}): Promise<CountryOptionList> {
+    return apiFetch<CountryOptionList>(`/employees/countries${toCountriesQuery(filter)}`);
   },
 };
