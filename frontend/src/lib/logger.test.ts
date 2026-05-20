@@ -35,7 +35,7 @@ describe("logger in development (default vitest env)", () => {
 
 describe("logger when PROD is true (production build)", () => {
   it("drops info calls so logs are not noisy in production", () => {
-    vi.stubEnv("PROD", "true");
+    vi.stubEnv("PROD", true);
 
     logger.info("hello");
 
@@ -43,7 +43,7 @@ describe("logger when PROD is true (production build)", () => {
   });
 
   it("still emits warn so production issues remain visible", () => {
-    vi.stubEnv("PROD", "true");
+    vi.stubEnv("PROD", true);
 
     logger.warn("alert");
 
@@ -51,7 +51,7 @@ describe("logger when PROD is true (production build)", () => {
   });
 
   it("still emits error so production failures remain visible", () => {
-    vi.stubEnv("PROD", "true");
+    vi.stubEnv("PROD", true);
 
     logger.error("boom", { code: "x" });
 
