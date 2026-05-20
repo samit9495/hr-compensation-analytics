@@ -99,6 +99,32 @@ class TestEmployeesCountryQueryCaseInsensitive:
         assert [row["country"] for row in body] == ["IN"]
 
 
+class TestPayrollBurdenEndpoints:
+    def test_payroll_by_country_returns_totals_and_percentages(self, client: TestClient) -> None:
+        _post(client, country="IN", salary="40")
+        _post(client, country="IN", salary="60")
+        _post(client, country="US", salary="300")
+
+        body = client.get("/insights/payroll/by-country").json()
+
+        assert body["total"] == "400.00"
+        assert body["entries"] == [
+            {"key": "US", "total": "300.00", "percentage": "75.00"},
+            {"key": "IN", "total": "100.00", "percentage": "25.00"},
+        ]
+
+    def test_payroll_by_title_collapses_case_variants(self, client: TestClient) -> None:
+        _post(client, job_title="Engineer", salary="50")
+        _post(client, job_title="engineer", salary="50")
+        _post(client, job_title="Manager", salary="100")
+
+        body = client.get("/insights/payroll/by-title").json()
+
+        assert body["total"] == "200.00"
+        titles = [e["key"] for e in body["entries"]]
+        assert titles == ["Engineer", "Manager"]
+
+
 class TestGlobalOverviewEndpoint:
     def test_empty_db_returns_zero_overview(self, client: TestClient) -> None:
         body = client.get("/insights/overview").json()
