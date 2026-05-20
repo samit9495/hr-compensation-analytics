@@ -13,6 +13,7 @@ vi.mock("@/services/insights", () => ({
     topTitles: vi.fn(),
     payrollByCountry: vi.fn(),
     payrollByTitle: vi.fn(),
+    outliers: vi.fn(),
   },
 }));
 
@@ -27,6 +28,7 @@ const apiMock = insightsApi as unknown as {
   byCountryAndTitle: ReturnType<typeof vi.fn>;
   payrollByCountry: ReturnType<typeof vi.fn>;
   payrollByTitle: ReturnType<typeof vi.fn>;
+  outliers: ReturnType<typeof vi.fn>;
 };
 
 const employeesMock = employeesApi as unknown as {
@@ -51,6 +53,8 @@ beforeEach(() => {
   apiMock.payrollByTitle.mockReset();
   apiMock.payrollByCountry.mockResolvedValue({ total: "0.00", entries: [] });
   apiMock.payrollByTitle.mockResolvedValue({ total: "0.00", entries: [] });
+  apiMock.outliers.mockReset();
+  apiMock.outliers.mockResolvedValue({ bucket: "bottom", entries: [] });
   employeesMock.countries.mockReset();
   employeesMock.countries.mockResolvedValue({
     countries: [{ code: "IN", count: 1 }],
@@ -58,6 +62,43 @@ beforeEach(() => {
 });
 
 describe("InsightsPage", () => {
+  it("renders compensation outlier tables for top and bottom buckets", async () => {
+    apiMock.byCountry.mockResolvedValue({
+      country: "IN",
+      average_salary: "100000.00",
+      min_salary: "30000.00",
+      max_salary: "250000.00",
+      employee_count: 1,
+    });
+    apiMock.byCountryAndTitle.mockResolvedValue({ country: "IN", averages: {} });
+    apiMock.outliers.mockImplementation((bucket: string) =>
+      Promise.resolve({
+        bucket,
+        entries: [
+          {
+            id: bucket === "bottom" ? 1 : 99,
+            full_name: bucket === "bottom" ? "Junior Joe" : "Senior Sam",
+            country: "IN",
+            job_title: "Engineer",
+            salary: bucket === "bottom" ? "10.00" : "200.00",
+            bucket: bucket === "bottom" ? 1 : 20,
+          },
+        ],
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("heading", { name: /bottom 5%/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /top 5%/i }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText("Junior Joe")).toBeInTheDocument();
+    expect(await screen.findByText("Senior Sam")).toBeInTheDocument();
+  });
+
   it("renders the payroll breakdown sections", async () => {
     apiMock.byCountry.mockResolvedValue({
       country: "IN",

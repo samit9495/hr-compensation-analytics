@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { CountryCombobox } from "@/components/CountryCombobox";
 import { KpiCard } from "@/components/KpiCard";
+import { OutlierTables } from "@/components/OutlierTables";
 import { PayrollBreakdown } from "@/components/PayrollBreakdown";
 import { TitleAveragesChart } from "@/components/TitleAveragesChart";
 import { useCountryInsights, useCountryTitleAverages } from "@/hooks/useInsights";
@@ -80,6 +81,9 @@ export function InsightsPage() {
           isError={payrollByTitle.isError}
         />
       </div>
+
+      <h2 className="pt-4 text-lg font-semibold text-slate-800">Compensation outliers</h2>
+      <OutlierTables />
     </section>
   );
 }

@@ -65,6 +65,22 @@ export type PayrollBurdenResponse = {
   entries: PayrollEntry[];
 };
 
+export type OutlierBucket = "bottom" | "top";
+
+export type OutlierEntry = {
+  id: number;
+  full_name: string;
+  country: string;
+  job_title: string;
+  salary: string;
+  bucket: number;
+};
+
+export type OutlierResponse = {
+  bucket: OutlierBucket;
+  entries: OutlierEntry[];
+};
+
 export type CountryOptionList = {
   countries: CountryOption[];
 };

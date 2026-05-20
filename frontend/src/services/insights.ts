@@ -5,6 +5,8 @@ import type {
   CountryTitleAverages,
   Employee,
   GlobalOverview,
+  OutlierBucket,
+  OutlierResponse,
   PayrollBurdenResponse,
   TopTitles,
 } from "@/services/types";
@@ -33,5 +35,10 @@ export const insightsApi = {
   },
   payrollByTitle(): Promise<PayrollBurdenResponse> {
     return apiFetch<PayrollBurdenResponse>(`/insights/payroll/by-title`);
+  },
+  outliers(bucket: OutlierBucket, limit = 10): Promise<OutlierResponse> {
+    return apiFetch<OutlierResponse>(
+      `/insights/outliers?bucket=${bucket}&limit=${limit}`,
+    );
   },
 };
