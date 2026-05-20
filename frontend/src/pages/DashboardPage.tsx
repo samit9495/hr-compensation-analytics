@@ -1,10 +1,17 @@
+import { AnalyticsSection } from "@/components/AnalyticsSection";
 import { CountryDistributionChart } from "@/components/CountryDistributionChart";
+import { InfoHint } from "@/components/InfoHint";
 import { KpiCard } from "@/components/KpiCard";
 import {
   useCountryDistribution,
   useGlobalOverview,
   useRecentEmployees,
 } from "@/hooks/useInsights";
+
+const TOOLTIP_DISTRIBUTION =
+  "Headcount distribution across countries. Useful for spotting concentration of risk or growth opportunities.";
+const TOOLTIP_RECENT =
+  "Most recently added employees. Useful for onboarding follow-ups and audit trails.";
 
 export function DashboardPage() {
   const overview = useGlobalOverview();
@@ -40,10 +47,11 @@ export function DashboardPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section aria-labelledby="distribution-heading">
-          <h2 id="distribution-heading" className="mb-2 text-lg font-semibold text-slate-800">
-            Employees by Country
-          </h2>
+        <AnalyticsSection
+          id="distribution"
+          title="Employees by Country"
+          tooltip={<InfoHint label="Employees by Country">{TOOLTIP_DISTRIBUTION}</InfoHint>}
+        >
           {distribution.isLoading ? (
             <p role="status" className="text-sm text-slate-500">
               Loading…
@@ -51,12 +59,13 @@ export function DashboardPage() {
           ) : distribution.data ? (
             <CountryDistributionChart counts={distribution.data.counts} />
           ) : null}
-        </section>
+        </AnalyticsSection>
 
-        <section aria-labelledby="recent-heading">
-          <h2 id="recent-heading" className="mb-2 text-lg font-semibold text-slate-800">
-            Recent Hires
-          </h2>
+        <AnalyticsSection
+          id="recent"
+          title="Recent Hires"
+          tooltip={<InfoHint label="Recent Hires">{TOOLTIP_RECENT}</InfoHint>}
+        >
           {recent.isLoading ? (
             <p role="status" className="text-sm text-slate-500">
               Loading…
@@ -83,7 +92,7 @@ export function DashboardPage() {
               No employees yet — run the seed script.
             </p>
           )}
-        </section>
+        </AnalyticsSection>
       </div>
     </section>
   );
