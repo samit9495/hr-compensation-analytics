@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.employee import Employee
 
 SALARY_SCALE = Decimal("0.01")
+PERCENTAGE_SCALE = Decimal("0.01")
 
 # Canonical (case-insensitive) form of a job title used for grouping and
 # aggregation. Storage keeps the original casing per row; insights collapse
@@ -16,6 +17,22 @@ title_canonical = func.lower(Employee.job_title)
 def display_title(canonical: str) -> str:
     """Human-readable form of a lowercase canonical title."""
     return canonical.title()
+
+
+def _payroll_response(
+    rows: list[tuple[str, Decimal]]
+) -> dict[str, object]:
+    total = sum((Decimal(t) for _, t in rows), Decimal("0"))
+    entries: list[dict[str, object]] = []
+    for key, raw_total in rows:
+        amount = Decimal(raw_total).quantize(SALARY_SCALE)
+        percentage = (
+            (Decimal(raw_total) / total * Decimal("100")).quantize(PERCENTAGE_SCALE)
+            if total > 0
+            else Decimal("0.00")
+        )
+        entries.append({"key": key, "total": amount, "percentage": percentage})
+    return {"total": total.quantize(SALARY_SCALE), "entries": entries}
 
 
 class SalaryInsightsService:
@@ -85,6 +102,24 @@ class SalaryInsightsService:
     def recent_employees(self, *, limit: int) -> list[Employee]:
         return list(
             self.db.scalars(select(Employee).order_by(Employee.id.desc()).limit(limit))
+        )
+
+    def payroll_by_country(self) -> dict[str, object]:
+        rows = self.db.execute(
+            select(Employee.country, func.sum(Employee.salary))
+            .group_by(Employee.country)
+            .order_by(func.sum(Employee.salary).desc(), Employee.country)
+        ).all()
+        return _payroll_response([(country, total) for country, total in rows])
+
+    def payroll_by_title(self) -> dict[str, object]:
+        rows = self.db.execute(
+            select(title_canonical, func.sum(Employee.salary))
+            .group_by(title_canonical)
+            .order_by(func.sum(Employee.salary).desc(), title_canonical)
+        ).all()
+        return _payroll_response(
+            [(display_title(canonical), total) for canonical, total in rows]
         )
 
     def global_overview(self) -> dict[str, object]:
