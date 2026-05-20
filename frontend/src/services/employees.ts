@@ -1,5 +1,6 @@
 import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
+  CompensationAnalysisResponse,
   CountriesFilter,
   CountryOptionList,
   Employee,
@@ -51,5 +52,10 @@ export const employeesApi = {
   },
   countries(filter: CountriesFilter = {}): Promise<CountryOptionList> {
     return apiFetch<CountryOptionList>(`/employees/countries${toCountriesQuery(filter)}`);
+  },
+  compensationAnalysis(filter: CountriesFilter = {}): Promise<CompensationAnalysisResponse> {
+    return apiFetch<CompensationAnalysisResponse>(
+      `/employees/compensation-analysis${toCountriesQuery(filter)}`,
+    );
   },
 };

@@ -41,6 +41,19 @@ export type CountryOption = {
   count: number;
 };
 
+export type EmployeeCompensationAnalysis = {
+  id: number;
+  peer_avg: string;
+  peer_min: string;
+  peer_max: string;
+  compa_ratio: string;
+  range_penetration: string;
+};
+
+export type CompensationAnalysisResponse = {
+  analyses: EmployeeCompensationAnalysis[];
+};
+
 export type CountryOptionList = {
   countries: CountryOption[];
 };

@@ -11,7 +11,13 @@ import {
   useEmployees,
   useUpdateEmployee,
 } from "@/hooks/useEmployees";
-import type { Employee, EmployeeCreate, EmployeeListParams } from "@/services/types";
+import { useCompensationAnalysis } from "@/hooks/useCompensationAnalysis";
+import type {
+  Employee,
+  EmployeeCompensationAnalysis,
+  EmployeeCreate,
+  EmployeeListParams,
+} from "@/services/types";
 
 const DEFAULT_LIMIT = 25;
 
@@ -24,6 +30,10 @@ export function EmployeesPage() {
 
   const params: EmployeeListParams = { ...filters, ...page };
   const query = useEmployees(params);
+  const analysisQuery = useCompensationAnalysis({
+    country: filters.country,
+    q: filters.q,
+  });
   const createMutation = useCreateEmployee();
   const updateMutation = useUpdateEmployee();
   const deleteMutation = useDeleteEmployee();
@@ -65,6 +75,10 @@ export function EmployeesPage() {
 
   const rows = query.data?.rows ?? [];
   const total = query.data?.total;
+  const analysisMap: Record<number, EmployeeCompensationAnalysis> | undefined =
+    analysisQuery.data
+      ? Object.fromEntries(analysisQuery.data.analyses.map((a) => [a.id, a]))
+      : undefined;
 
   return (
     <section aria-labelledby="employees-heading" className="space-y-4">
@@ -117,6 +131,7 @@ export function EmployeesPage() {
       ) : (
         <EmployeesTable
           employees={rows}
+          analyses={analysisMap}
           onEdit={(e) => {
             setEditing(e);
             setCreating(false);

@@ -15,6 +15,7 @@ vi.mock("@/services/employees", () => ({
     update: vi.fn(),
     remove: vi.fn(),
     countries: vi.fn(),
+    compensationAnalysis: vi.fn(),
   },
 }));
 
@@ -24,6 +25,7 @@ const apiMock = employeesApi as unknown as {
   update: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
   countries: ReturnType<typeof vi.fn>;
+  compensationAnalysis: ReturnType<typeof vi.fn>;
 };
 
 function renderPage() {
@@ -56,6 +58,8 @@ beforeEach(() => {
   apiMock.remove.mockReset();
   apiMock.countries.mockReset();
   apiMock.countries.mockResolvedValue({ countries: [] });
+  apiMock.compensationAnalysis.mockReset();
+  apiMock.compensationAnalysis.mockResolvedValue({ analyses: [] });
 });
 
 describe("EmployeesPage", () => {
@@ -70,6 +74,38 @@ describe("EmployeesPage", () => {
     expect(await screen.findByText("Jane Doe")).toBeInTheDocument();
     expect(screen.getByText("John Smith")).toBeInTheDocument();
     expect(apiMock.list).toHaveBeenCalled();
+  });
+
+  it("renders compa-ratio badges when compensation analysis is available", async () => {
+    apiMock.list.mockResolvedValue({
+      rows: [employee(1, "Jane Doe"), employee(2, "John Smith")],
+      total: 2,
+    });
+    apiMock.compensationAnalysis.mockResolvedValue({
+      analyses: [
+        {
+          id: 1,
+          peer_avg: "100.00",
+          peer_min: "50.00",
+          peer_max: "150.00",
+          compa_ratio: "0.7500",
+          range_penetration: "0.2000",
+        },
+        {
+          id: 2,
+          peer_avg: "100.00",
+          peer_min: "50.00",
+          peer_max: "150.00",
+          compa_ratio: "1.3000",
+          range_penetration: "0.9000",
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("75%")).toBeInTheDocument();
+    expect(screen.getByText("130%")).toBeInTheDocument();
   });
 
   it("renders the 'of N' pagination summary using the API total", async () => {
