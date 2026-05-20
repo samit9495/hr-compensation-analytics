@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import logging
 
@@ -80,6 +82,11 @@ class EmployeeService:
 
     def count(self, *, country: str | None = None, q: str | None = None) -> int:
         return self.repo.count(country=country, q=q)
+
+    def distinct_countries(
+        self, *, country: str | None = None, q: str | None = None
+    ) -> list[tuple[str, int]]:
+        return self.repo.distinct_countries(country=country, q=q)
 
     def update(self, employee_id: int, payload: EmployeeUpdate) -> Employee:
         employee = self.get(employee_id)

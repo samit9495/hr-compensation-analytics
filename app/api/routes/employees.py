@@ -1,12 +1,22 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Response, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.repositories.employee_repository import SORTABLE_FIELDS
 from app.schemas.employee import EmployeeCreate, EmployeeRead, EmployeeUpdate
 from app.services.employee_service import EmployeeService
+
+
+class CountryOption(BaseModel):
+    code: str
+    count: int
+
+
+class CountryOptionList(BaseModel):
+    countries: list[CountryOption]
 
 _ALLOWED_SORT_VALUES = sorted(
     [k for k in SORTABLE_FIELDS] + [f"-{k}" for k in SORTABLE_FIELDS]
@@ -48,6 +58,19 @@ def create_employee(
 ) -> EmployeeRead:
     employee = EmployeeService(db).create(payload)
     return EmployeeRead.model_validate(employee)
+
+
+@router.get("/countries", response_model=CountryOptionList)
+def list_distinct_countries(
+    country: Annotated[str | None, Query(min_length=2, max_length=2)] = None,
+    q: Annotated[str | None, Query(max_length=100)] = None,
+    db: Session = Depends(get_db),
+) -> CountryOptionList:
+    canonical_country = country.upper() if country else None
+    rows = EmployeeService(db).distinct_countries(country=canonical_country, q=q)
+    return CountryOptionList(
+        countries=[CountryOption(code=code, count=count) for code, count in rows]
+    )
 
 
 @router.get("/{employee_id}", response_model=EmployeeRead)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
@@ -46,6 +48,16 @@ class EmployeeRepository:
     def count(self, *, country: str | None, q: str | None) -> int:
         stmt = self._filtered(select(func.count(Employee.id)), country=country, q=q)
         return int(self.db.scalar(stmt) or 0)
+
+    def distinct_countries(
+        self, *, country: str | None = None, q: str | None = None
+    ) -> list[tuple[str, int]]:
+        stmt = self._filtered(
+            select(Employee.country, func.count(Employee.id)),
+            country=country,
+            q=q,
+        ).group_by(Employee.country).order_by(Employee.country)
+        return [(code, int(count)) for code, count in self.db.execute(stmt).all()]
 
     @staticmethod
     def _filtered(stmt, *, country: str | None, q: str | None):
