@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.db.seed import run as seed_run
@@ -17,7 +17,7 @@ class TestSeedRun:
             (e.full_name, e.country, e.salary)
             for e in db.scalars(select(Employee).order_by(Employee.id))
         ]
-        db.query(Employee).delete()
+        db.execute(delete(Employee))
         db.commit()
 
         seed_run(db, count=10, rng_seed=42)
