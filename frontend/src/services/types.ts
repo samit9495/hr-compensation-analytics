@@ -31,6 +31,11 @@ export type EmployeeListParams = {
   offset?: number;
 };
 
+export type EmployeeListResult = {
+  rows: Employee[];
+  total: number;
+};
+
 export type CountryInsights = {
   country: string;
   average_salary: string;

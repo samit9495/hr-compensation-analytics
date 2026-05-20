@@ -16,7 +16,12 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 type ApiInit = Omit<RequestInit, "body"> & { body?: unknown };
 
-export async function apiFetch<T>(path: string, init: ApiInit = {}): Promise<T> {
+export type ApiResponse<T> = {
+  data: T;
+  headers: Headers;
+};
+
+async function rawApiFetch<T>(path: string, init: ApiInit): Promise<ApiResponse<T>> {
   const { body, headers, method, ...rest } = init;
 
   const response = await fetch(`${BASE_URL}${path}`, {
@@ -49,9 +54,19 @@ export async function apiFetch<T>(path: string, init: ApiInit = {}): Promise<T> 
     throw new ApiError(response.status, detail, code);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+  const data =
+    response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+  return { data, headers: response.headers };
+}
 
-  return (await response.json()) as T;
+export async function apiFetch<T>(path: string, init: ApiInit = {}): Promise<T> {
+  const { data } = await rawApiFetch<T>(path, init);
+  return data;
+}
+
+export async function apiFetchWithMeta<T>(
+  path: string,
+  init: ApiInit = {},
+): Promise<ApiResponse<T>> {
+  return rawApiFetch<T>(path, init);
 }

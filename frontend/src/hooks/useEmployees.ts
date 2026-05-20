@@ -2,9 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { employeesApi } from "@/services/employees";
 import type {
-  Employee,
   EmployeeCreate,
   EmployeeListParams,
+  EmployeeListResult,
   EmployeeUpdate,
 } from "@/services/types";
 
@@ -12,7 +12,7 @@ export const employeesQueryKey = (params: EmployeeListParams) =>
   ["employees", params] as const;
 
 export function useEmployees(params: EmployeeListParams = {}) {
-  return useQuery<Employee[]>({
+  return useQuery<EmployeeListResult>({
     queryKey: employeesQueryKey(params),
     queryFn: () => employeesApi.list(params),
   });

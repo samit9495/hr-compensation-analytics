@@ -63,8 +63,8 @@ export function EmployeesPage() {
     }
   };
 
-  const rows = query.data ?? [];
-  const isLastPage = rows.length < page.limit;
+  const rows = query.data?.rows ?? [];
+  const total = query.data?.total;
 
   return (
     <section aria-labelledby="employees-heading" className="space-y-4">
@@ -129,7 +129,7 @@ export function EmployeesPage() {
       <Pagination
         offset={page.offset}
         limit={page.limit}
-        isLastPage={isLastPage}
+        total={total}
         onChange={(next) => setPage(next)}
       />
     </section>

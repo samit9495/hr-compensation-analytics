@@ -56,7 +56,10 @@ beforeEach(() => {
 
 describe("EmployeesPage", () => {
   it("loads and renders employees from the API", async () => {
-    apiMock.list.mockResolvedValue([employee(1, "Jane Doe"), employee(2, "John Smith")]);
+    apiMock.list.mockResolvedValue({
+      rows: [employee(1, "Jane Doe"), employee(2, "John Smith")],
+      total: 2,
+    });
 
     renderPage();
 
@@ -65,8 +68,20 @@ describe("EmployeesPage", () => {
     expect(apiMock.list).toHaveBeenCalled();
   });
 
+  it("renders the 'of N' pagination summary using the API total", async () => {
+    apiMock.list.mockResolvedValue({
+      rows: [employee(1, "Jane Doe"), employee(2, "John Smith")],
+      total: 137,
+    });
+
+    renderPage();
+
+    await screen.findByText("Jane Doe");
+    expect(screen.getByText(/showing 1\u201325 of 137/i)).toBeInTheDocument();
+  });
+
   it("opens the create form and posts a new employee", async () => {
-    apiMock.list.mockResolvedValue([]);
+    apiMock.list.mockResolvedValue({ rows: [], total: 0 });
     apiMock.create.mockResolvedValue(employee(7, "Alice Roe"));
 
     renderPage();

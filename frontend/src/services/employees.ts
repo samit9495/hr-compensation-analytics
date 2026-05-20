@@ -1,9 +1,10 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchWithMeta } from "@/lib/api";
 import type {
   Employee,
   EmployeeCreate,
   EmployeeListParams,
   EmployeeUpdate,
+  EmployeeListResult,
 } from "@/services/types";
 
 function toQuery(params: EmployeeListParams): string {
@@ -18,8 +19,13 @@ function toQuery(params: EmployeeListParams): string {
 }
 
 export const employeesApi = {
-  list(params: EmployeeListParams = {}): Promise<Employee[]> {
-    return apiFetch<Employee[]>(`/employees${toQuery(params)}`);
+  async list(params: EmployeeListParams = {}): Promise<EmployeeListResult> {
+    const { data, headers } = await apiFetchWithMeta<Employee[]>(
+      `/employees${toQuery(params)}`,
+    );
+    const headerTotal = headers.get("x-total-count");
+    const total = headerTotal !== null ? Number(headerTotal) : data.length;
+    return { rows: data, total };
   },
   get(id: number): Promise<Employee> {
     return apiFetch<Employee>(`/employees/${id}`);
