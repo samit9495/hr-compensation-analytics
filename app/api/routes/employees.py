@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.repositories.employee_repository import SORTABLE_FIELDS
+from app.schemas.analytics import (
+    CompensationAnalysisResponse,
+    EmployeeCompensationAnalysis,
+)
 from app.schemas.employee import EmployeeCreate, EmployeeRead, EmployeeUpdate
+from app.services.compensation_analysis_service import CompensationAnalysisService
 from app.services.employee_service import EmployeeService
 
 
@@ -70,6 +75,24 @@ def list_distinct_countries(
     rows = EmployeeService(db).distinct_countries(country=canonical_country, q=q)
     return CountryOptionList(
         countries=[CountryOption(code=code, count=count) for code, count in rows]
+    )
+
+
+@router.get("/compensation-analysis", response_model=CompensationAnalysisResponse)
+def compensation_analysis(
+    country: Annotated[str | None, Query(min_length=2, max_length=2)] = None,
+    q: Annotated[str | None, Query(max_length=100)] = None,
+    db: Session = Depends(get_db),
+) -> CompensationAnalysisResponse:
+    canonical_country = country.upper() if country else None
+    analyses = CompensationAnalysisService(db).analyze(
+        country=canonical_country, q=q
+    )
+    return CompensationAnalysisResponse(
+        analyses=[
+            EmployeeCompensationAnalysis(id=emp_id, **payload)
+            for emp_id, payload in sorted(analyses.items())
+        ]
     )
 
 
