@@ -16,7 +16,7 @@ afterEach(() => {
 describe("employeesApi.list", () => {
   it("encodes country/q/sort/limit/offset into the query string", async () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
-      new Response("[]", { status: 200 }),
+      new Response("[]", { status: 200, headers: { "x-total-count": "0" } }),
     );
 
     await employeesApi.list({ country: "IN", q: "ja", sort: "-salary", limit: 25, offset: 50 });
@@ -33,13 +33,39 @@ describe("employeesApi.list", () => {
 
   it("omits the query string when no params are passed", async () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
-      new Response("[]", { status: 200 }),
+      new Response("[]", { status: 200, headers: { "x-total-count": "0" } }),
     );
 
     await employeesApi.list();
 
     const url = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]![0] as string;
     expect(url.endsWith("/employees")).toBe(true);
+  });
+
+  it("returns {rows, total} parsed from the X-Total-Count header", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response("[]", {
+        status: 200,
+        headers: { "x-total-count": "137" },
+      }),
+    );
+
+    const result = await employeesApi.list();
+
+    expect(result).toEqual({ rows: [], total: 137 });
+  });
+
+  it("defaults total to the length of rows when the header is missing", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(JSON.stringify([{ id: 1 }, { id: 2 }]), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const result = await employeesApi.list();
+
+    expect(result.total).toBe(2);
   });
 });
 
