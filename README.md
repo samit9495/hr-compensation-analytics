@@ -1,11 +1,11 @@
-# Salary Management
+# HR Compensation Analytics Platform
 
-A small but production-quality salary management tool for an HR manager of
-an organization with 10,000 employees. Built for the Incubyte assessment;
-graded on visible TDD evolution in `git log`, software craftsmanship,
-and an end-to-end working stack.
+A production-quality, full-stack tool that turns raw pay data for a
+10,000-employee organization into the metrics compensation teams actually
+use — compa-ratio, range penetration, and percentile-outlier detection —
+behind a typed, accessible React dashboard. Built test-first, with a
+visible Red-Green-Refactor evolution in `git log`, and deployed end-to-end.
 
-> **Spec**: `Salary Management Assessment.pdf` at the repo root.
 > **Agent brief**: [`AGENTS.md`](./AGENTS.md).
 
 ## Stack
